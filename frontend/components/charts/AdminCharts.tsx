@@ -16,7 +16,7 @@ import type { Grievance } from "@/lib/types";
 
 import { canonicalDepartmentId, getDepartmentLabel } from "@/lib/departments";
 
-const GREYS = ["#ff6b00", "#18181b", "#3f3f46", "#71717a"];
+const CIVORA_PALETTE = ["#0D9488", "#101D32", "#14B8A6", "#192B45", "#2563EB", "#64748B"];
 
 /**
  * Macro distribution charts. Accepts the current grievance set so the
@@ -64,7 +64,7 @@ export function AdminCharts({ items = MOCK_GRIEVANCES }: { items?: Grievance[] }
                 label={({ name, percent }) => `${name} (${((percent || 0) * 100).toFixed(0)}%)`}
               >
                 {byStatus.map((_, i) => (
-                  <Cell key={i} fill={GREYS[i % GREYS.length]} />
+                  <Cell key={i} fill={CIVORA_PALETTE[i % CIVORA_PALETTE.length]} />
                 ))}
               </Pie>
               <Tooltip contentStyle={{ backgroundColor: '#ffffff', borderRadius: '8px', border: '1px solid #e4e4e7', fontSize: '12px' }} />

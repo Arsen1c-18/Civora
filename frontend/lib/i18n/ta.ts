@@ -35,7 +35,7 @@ const ta: Messages = {
   accountabilityLabel: "பொறுப்புக்கூறல்:",
   accountabilityText:
     "துறை நடவடிக்கைகள் மற்றும் நிலை மாற்றங்கள் பொறுப்புள்ள மனித மதிப்பாய்வுக்காகப் பதிவு செய்யப்படுகின்றன.",
-  copyright: "SAMARTH — குடிமை புகார் தீர்வு மாதிரி.",
+  copyright: "CIVORA — குடிமை புகார் தீர்வு மாதிரி.",
 
   // ── Home: hero ──
   homeBadge: "தேசிய பொது புகார்கள் தளம்",

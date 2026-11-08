@@ -450,23 +450,23 @@ export function AdminBoard() {
           className="text-left w-full transition focus:outline-none"
           title="Click to filter by flagged complaints"
         >
-          <Card className={`border-orange-300/80 bg-orange-50/30 shadow-2xs transition hover:bg-orange-50/60 ${queueTab === "active" && statusFilter === "flagged" ? "ring-2 ring-orange-500" : ""}`}>
+          <Card className={`border-amber-300/80 bg-amber-50/40 shadow-2xs transition hover:bg-amber-50/70 ${queueTab === "active" && statusFilter === "flagged" ? "ring-2 ring-amber-500" : ""}`}>
             <CardBody className="p-4">
               <div className="flex items-center justify-between">
-                <span className="text-[11px] font-semibold uppercase tracking-wider text-orange-800">
+                <span className="text-[11px] font-semibold uppercase tracking-wider text-amber-800">
                   Flagged
                 </span>
-                <AlertTriangle size={16} className="text-orange-600" />
+                <AlertTriangle size={16} className="text-amber-600" />
               </div>
               <div className="mt-2 flex items-baseline gap-2">
-                <p className="text-2xl font-bold tracking-tight text-orange-950">{stats.flaggedCount}</p>
+                <p className="text-2xl font-bold tracking-tight text-amber-950">{stats.flaggedCount}</p>
                 {stats.flaggedCount > 0 && (
-                  <span className="rounded-sm bg-orange-500 px-1.5 py-0.5 text-[10px] font-bold uppercase text-white">
+                  <span className="rounded-sm bg-amber-600 px-1.5 py-0.5 text-[10px] font-bold uppercase text-white">
                     Review
                   </span>
                 )}
               </div>
-              <p className="mt-0.5 text-[11px] text-orange-700">Needs officer verification</p>
+              <p className="mt-0.5 text-[11px] text-amber-800">Needs officer verification</p>
             </CardBody>
           </Card>
         </button>

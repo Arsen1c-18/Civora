@@ -1,27 +1,33 @@
 import type { ButtonHTMLAttributes } from "react";
 import { clsx } from "clsx";
 
-type Variant = "primary" | "orange" | "secondary" | "outline" | "ghost" | "dark";
-type Size = "sm" | "md" | "lg";
+export type ButtonVariant = "primary" | "orange" | "navy" | "secondary" | "outline" | "ghost" | "dark";
+export type ButtonSize = "sm" | "md" | "lg";
 
-const variants: Record<Variant, string> = {
-  /* Main CTAs are solid black; orange carries the accent elsewhere. */
+const variants: Record<ButtonVariant, string> = {
+  /* Primary buttons use CIVORA Primary Teal (#0D9488) */
   primary:
-    "bg-ink-950 text-white shadow-xs hover:bg-ink-800 active:bg-ink-950 focus-visible:ring-ink-500",
+    "bg-[#0D9488] text-white shadow-xs hover:bg-[#0F766E] active:bg-[#115E59] focus-visible:ring-[#0D9488]",
+  /* Legacy alias seamlessly mapped to Teal — no orange rendered */
   orange:
-    "bg-primary-600 text-white shadow-xs hover:bg-primary-500 active:bg-primary-700 focus-visible:ring-primary-500",
+    "bg-[#0D9488] text-white shadow-xs hover:bg-[#0F766E] active:bg-[#115E59] focus-visible:ring-[#0D9488]",
+  /* Navy brand variant (#101D32) */
+  navy:
+    "bg-[#101D32] text-white shadow-xs hover:bg-[#192B45] active:bg-[#0B1320] focus-visible:ring-[#101D32]",
+  /* Clean white card secondary with #E2E8F0 border */
   secondary:
-    "bg-ink-100 text-ink-800 hover:bg-ink-200/80 active:bg-ink-200 focus-visible:ring-ink-400",
+    "border border-[#E2E8F0] bg-white text-[#172033] shadow-2xs hover:bg-[#F3F6F8] hover:border-slate-300 active:bg-slate-100 focus-visible:ring-[#0D9488]",
   outline:
-    "border border-ink-200 bg-white text-ink-800 shadow-2xs hover:bg-ink-50 hover:border-ink-300 active:bg-ink-100 focus-visible:ring-primary-600",
+    "border border-[#0D9488] bg-white text-[#0D9488] shadow-2xs hover:bg-teal-50 hover:border-[#0F766E] active:bg-teal-100 focus-visible:ring-[#0D9488]",
   ghost:
-    "text-primary-700 hover:bg-primary-50 active:bg-primary-100 focus-visible:ring-primary-600",
-  dark: "bg-ink-900 text-white shadow-xs hover:bg-ink-800 active:bg-ink-950 focus-visible:ring-ink-500",
+    "text-[#0D9488] hover:bg-teal-50 hover:text-[#0F766E] active:bg-teal-100 focus-visible:ring-[#0D9488]",
+  dark:
+    "bg-[#101D32] text-white shadow-xs hover:bg-[#192B45] active:bg-[#0B1320] focus-visible:ring-[#101D32]",
 };
 
-const sizes: Record<Size, string> = {
-  sm: "h-8.5 px-3 text-xs font-medium",
-  md: "h-10 px-4 text-sm font-medium",
+const sizes: Record<ButtonSize, string> = {
+  sm: "h-8.5 px-3 text-xs font-semibold",
+  md: "h-10 px-4 text-sm font-semibold",
   lg: "h-11 px-5 text-sm font-semibold",
 };
 
@@ -31,13 +37,13 @@ export function Button({
   className,
   ...props
 }: ButtonHTMLAttributes<HTMLButtonElement> & {
-  variant?: Variant;
-  size?: Size;
+  variant?: ButtonVariant;
+  size?: ButtonSize;
 }) {
   return (
     <button
       className={clsx(
-        "inline-flex items-center justify-center gap-2 rounded-md font-medium transition-all duration-150",
+        "inline-flex items-center justify-center gap-2 rounded-md font-semibold transition-all duration-150 cursor-pointer",
         "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-offset-white",
         "disabled:cursor-not-allowed disabled:opacity-50 active:scale-[0.99]",
         variants[variant],

@@ -39,7 +39,7 @@ const en = {
   accountabilityLabel: "Accountability:",
   accountabilityText:
     "Department actions and status transitions are recorded for accountable human review.",
-  copyright: "SAMARTH — System for Accessible Management, Action, Resolution and Tracking of Hearings.",
+  copyright: "CIVORA — AI-Powered Grievance Redressal & Management Platform.",
 
   // ── Home: hero ──
   homeBadge: "National public grievance portal",
@@ -101,8 +101,8 @@ const en = {
   accStep2Text: "See meaningful status changes.",
 
   // ── Home (redesigned 2026-10): hero ──
-  heroBadge: "SAMARTH — National Grievance Portal",
-  heroTitle: "Every grievance deserves a clear next step.",
+  heroBadge: "CIVORA — AI-Powered Grievance Redressal & Management",
+  heroTitle: "Every grievance deserves a resolution.",
   heroSubtitle:
     "Report public and civic infrastructure problems with exact location and evidence. Follow your issue through a transparent, verified lifecycle where authorized officers make the final decisions.",
   heroCtaReport: "Report a Grievance",

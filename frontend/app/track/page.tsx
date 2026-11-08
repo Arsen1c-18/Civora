@@ -39,24 +39,29 @@ export default function TrackPage() {
   ];
 
   return (
-    <div className="bg-white min-h-[calc(100vh-4rem)]">
+    <div className="bg-[#F3F6F8] min-h-[calc(100vh-4rem)]">
       {/* Page header — full bleed */}
-      <div className="border-b border-ink-100 bg-ink-50/50 px-4 py-5 sm:px-6 lg:px-8">
-        <h1 className="text-xl font-bold tracking-tight text-ink-950">
-          {t("trackTitle")}
-        </h1>
-        <p className="mt-1 max-w-2xl text-sm leading-6 text-ink-500">{t("trackSubtitle")}</p>
+      <div className="border-b border-[#E2E8F0] bg-white px-4 py-6 sm:px-6 lg:px-8">
+        <div className="mx-auto max-w-7xl">
+          <span className="text-[11px] font-bold uppercase tracking-wider text-teal-700">
+            Citizen Tracking Portal
+          </span>
+          <h1 className="mt-1 text-xl font-bold tracking-tight text-[#101D32] sm:text-2xl">
+            {t("trackTitle")}
+          </h1>
+          <p className="mt-1 max-w-2xl text-xs sm:text-sm leading-6 text-slate-500">{t("trackSubtitle")}</p>
+        </div>
       </div>
 
       {/* My grievances */}
-      <div className="px-4 py-6 sm:px-6 lg:px-8">
+      <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
         {isLoading && !user ? (
           <div className="mx-auto max-w-lg text-center py-16">
-            <div className="inline-block animate-spin rounded-full h-8 w-8 border-2 border-primary-600 border-t-transparent" />
-            <p className="mt-3 text-xs text-ink-500 font-medium">Restoring your session…</p>
+            <div className="inline-block animate-spin rounded-full h-8 w-8 border-2 border-teal-600 border-t-transparent" />
+            <p className="mt-3 text-xs text-slate-500 font-medium">Restoring your session…</p>
           </div>
         ) : !user ? (
-          <Card className="mx-auto max-w-lg border-primary-200 bg-primary-50/40 text-center">
+          <Card className="mx-auto max-w-lg border-teal-200 bg-teal-50/40 text-center">
             <CardBody className="space-y-4 p-8">
               <h2 className="text-xl font-bold text-ink-950">{t("signinTrackTitle")}</h2>
               <p className="text-sm leading-6 text-ink-600">{t("signinTrackText")}</p>

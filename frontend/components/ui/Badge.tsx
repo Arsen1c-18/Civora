@@ -3,16 +3,20 @@
 import { clsx } from "clsx";
 import { useI18n, type MessageKey } from "@/lib/i18n";
 
-type Tone = "orange" | "dark" | "grey" | "outline" | "emerald" | "amber" | "rose";
+export type BadgeTone = "teal" | "navy" | "orange" | "dark" | "grey" | "outline" | "emerald" | "amber" | "rose" | "blue";
 
-const tones: Record<Tone, string> = {
-  orange: "bg-primary-50 text-primary-700 border border-primary-200/70",
-  dark: "bg-ink-900 text-white border border-ink-900",
-  grey: "bg-ink-100 text-ink-700 border border-ink-200/60",
-  outline: "border border-ink-200 text-ink-700 bg-white shadow-2xs",
-  emerald: "bg-emerald-50 text-emerald-700 border border-emerald-200/70",
-  amber: "bg-amber-50 text-amber-700 border border-amber-200/70",
-  rose: "bg-rose-50 text-rose-700 border border-rose-200/70",
+const tones: Record<BadgeTone, string> = {
+  teal: "bg-teal-50 text-teal-800 border border-teal-200/80 font-medium",
+  navy: "bg-[#101D32]/10 text-[#101D32] border border-[#101D32]/20 font-medium",
+  /* Legacy alias seamlessly rendered as Teal — no orange */
+  orange: "bg-teal-50 text-teal-800 border border-teal-200/80 font-medium",
+  dark: "bg-[#101D32] text-white border border-[#101D32]",
+  grey: "bg-slate-100 text-slate-700 border border-slate-200/70",
+  outline: "border border-slate-200 text-slate-700 bg-white shadow-2xs",
+  emerald: "bg-emerald-50 text-emerald-800 border border-emerald-200/80",
+  amber: "bg-amber-50 text-amber-800 border border-amber-200/80",
+  rose: "bg-rose-50 text-rose-800 border border-rose-200/80",
+  blue: "bg-blue-50 text-blue-800 border border-blue-200/80",
 };
 
 export function Badge({
@@ -20,7 +24,7 @@ export function Badge({
   children,
   className,
 }: {
-  tone?: Tone;
+  tone?: BadgeTone;
   children: React.ReactNode;
   className?: string;
 }) {
@@ -69,8 +73,13 @@ export function StatusBadge({ status }: { status: string }) {
   const label = key ? t(key) : status.replace("_", " ");
   if (s === "resolved" || s === "closed")
     return <Badge tone="emerald">{label}</Badge>;
-  if (s === "open" || s === "submitted") return <Badge tone="orange">{label}</Badge>;
-  if (s === "in_progress" || s === "assigned")
+  if (s === "open" || s === "submitted")
+    return <Badge tone="teal">{label}</Badge>;
+  if (s === "in_progress" || s === "assigned" || s === "triaged")
+    return <Badge tone="blue">{label}</Badge>;
+  if (s === "escalated" || s === "rejected" || s === "blocked")
+    return <Badge tone="rose">{label}</Badge>;
+  if (s === "under_review" || s === "pending_assignment")
     return <Badge tone="amber">{label}</Badge>;
   return <Badge tone="outline">{label}</Badge>;
 }

@@ -35,7 +35,7 @@ const gu: Messages = {
   accountabilityLabel: "જવાબદારી:",
   accountabilityText:
     "વિભાગીય પગલાં અને સ્થિતિ ફેરફાર જવાબદાર માનવીય સમીક્ષા માટે નોંધાય છે.",
-  copyright: "SAMARTH — નાગરિક ફરિયાદ નિરાકરણ પ્રોટોટાઇપ.",
+  copyright: "CIVORA — નાગરિક ફરિયાદ નિરાકરણ પ્રોટોટાઇપ.",
 
   // ── Home: hero ──
   homeBadge: "રાષ્ટ્રીય જાહેર ફરિયાદ પોર્ટલ",

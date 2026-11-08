@@ -339,14 +339,14 @@ function LoginForm() {
           <div className="mb-6">
             <div className="flex items-center gap-3 mb-3">
               <Image
-                src="/logo.png"
-                alt="SAMARTH Logo"
+                src="/civora-logo.png"
+                alt="CIVORA Logo"
                 width={40}
                 height={40}
                 className="h-10 w-10 object-contain shrink-0"
                 priority
               />
-              <span className="inline-flex items-center gap-1.5 rounded-sm bg-primary-50 px-2 py-1 text-[10px] font-bold uppercase tracking-wider text-primary-700 ring-1 ring-primary-200">
+              <span className="inline-flex items-center gap-1.5 rounded-sm bg-teal-50 px-2 py-1 text-[10px] font-bold uppercase tracking-wider text-teal-800 ring-1 ring-teal-200">
                 <ShieldCheck size={12} strokeWidth={2} />
                 {t("securePortal")}
               </span>

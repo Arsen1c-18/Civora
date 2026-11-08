@@ -7,7 +7,7 @@ import { AdminHeader } from "@/components/admin/AdminNav";
 export default function AdminPage() {
   return (
     <AdminGate>
-      <div className="bg-white min-h-[calc(100vh-4rem)]">
+      <div className="bg-[#F3F6F8] min-h-[calc(100vh-4rem)]">
         <AdminHeader
           title="Admin dashboard"
           subtitle="Review new complaints, verify suggested routing, and hand each case to the right department team."

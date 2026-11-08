@@ -1,8 +1,8 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #18181b;
+  --background: #f3f6f8;
+  --foreground: #172033;
   /* Scale overall UI by 20% across the entire application */
   font-size: 120%;
   -webkit-text-size-adjust: 100%;
@@ -14,73 +14,86 @@
   --color-foreground: var(--foreground);
 
   /*
-   * Bright, vibrant civic orange primary palette.
-   *
-   * 600 (#ff5500) is the signature vivid accent used for CTAs, focus rings,
-   * badges, and high-energy interactive surfaces.
-   * 700 (#e04800) is a rich, saturated orange providing solid contrast on
-   * light backgrounds without appearing muddy or brown.
+   * CIVORA Design System Tokens
+   * Primary Navy: #101D32 | Secondary Navy: #192B45
+   * Primary Teal: #0D9488 | Secondary Teal: #14B8A6
+   * Page Background: #F3F6F8 | Card Surface: #FFFFFF
+   * Primary Text: #172033 | Secondary Text: #64748B
+   * Border: #E2E8F0
    */
-  --color-primary-50: #fff7ed;
-  --color-primary-100: #ffedd5;
-  --color-primary-200: #fed7aa;
-  --color-primary-300: #fdba74;
-  --color-primary-400: #fb923c;
-  --color-primary-500: #ff6f00;
-  --color-primary-600: #ff5500;
-  --color-primary-700: #e04800;
-  --color-primary-800: #b33600;
-  --color-primary-900: #802600;
-  --color-primary-950: #4a1400;
 
-  /* True neutral greys (zinc) — no blue cast */
-  --color-ink-50: #fafafa;
-  --color-ink-100: #f4f4f5;
-  --color-ink-200: #e4e4e7;
-  --color-ink-300: #d4d4d8;
-  --color-ink-400: #a1a1aa;
-  --color-ink-500: #71717a;
-  --color-ink-600: #52525b;
-  --color-ink-700: #3f3f46;
-  --color-ink-800: #27272a;
-  --color-ink-900: #18181b;
-  --color-ink-950: #09090b;
+  /* Primary Accent: Crisp, WCAG-conscious Teal */
+  --color-primary-50: #f0fdfa;
+  --color-primary-100: #ccfbf1;
+  --color-primary-200: #99f6e4;
+  --color-primary-300: #5eead4;
+  --color-primary-400: #2dd4bf;
+  --color-primary-500: #14b8a6; /* Secondary Teal */
+  --color-primary-600: #0d9488; /* Primary Teal */
+  --color-primary-700: #0f766e;
+  --color-primary-800: #115e59;
+  --color-primary-900: #134e4a;
+  --color-primary-950: #042f2e;
 
-  --font-sans: var(--font-geist-sans), system-ui, -apple-system, "Segoe UI",
+  /* Institutional Navy Brand Palette */
+  --color-navy-50: #f8fafc;
+  --color-navy-100: #f1f5f9;
+  --color-navy-200: #e2e8f0;
+  --color-navy-300: #cbd5e1;
+  --color-navy-400: #94a3b8;
+  --color-navy-500: #64748b;
+  --color-navy-600: #334e77;
+  --color-navy-700: #243b5e;
+  --color-navy-800: #192b45; /* Secondary Navy */
+  --color-navy-900: #101d32; /* Primary Navy */
+  --color-navy-950: #0b1320;
+
+  /* Neutral Greys & Text: Slate-based for high institutional clarity */
+  --color-ink-50: #f8fafc;
+  --color-ink-100: #f1f5f9;
+  --color-ink-200: #e2e8f0; /* Standard Border */
+  --color-ink-300: #cbd5e1;
+  --color-ink-400: #94a3b8;
+  --color-ink-500: #64748b; /* Secondary Text */
+  --color-ink-600: #475569;
+  --color-ink-700: #334155;
+  --color-ink-800: #1e293b;
+  --color-ink-900: #172033; /* Primary Text */
+  --color-ink-950: #0f172a;
+
+  /* Semantic status tokens */
+  --color-civic-success: #16a34a;
+  --color-civic-warning: #d97706;
+  --color-civic-error: #dc2626;
+  --color-civic-info: #2563eb;
+
+  --font-sans: var(--font-inter), system-ui, -apple-system, "Segoe UI",
     Roboto, Arial, sans-serif;
   --font-mono: var(--font-geist-mono), ui-monospace, monospace;
 
-  /* Halved border radius scale for crisp, professional civic UI */
-  --radius-xs: 1px;
-  --radius-sm: 2px;
-  --radius-md: 3px;
-  --radius-lg: 4px;
-  --radius-xl: 6px;
-  --radius-2xl: 8px;
-  --radius-3xl: 12px;
-  --radius: 4px;
+  /* Crisp professional enterprise radius scale */
+  --radius-xs: 2px;
+  --radius-sm: 4px;
+  --radius-md: 6px;
+  --radius-lg: 8px;
+  --radius-xl: 12px;
+  --radius-2xl: 16px;
+  --radius: 6px;
 
-  /* Homepage hero entrance: one-shot both-fill so nothing flashes before
-   * the staggered `[animation-delay:…]` classes start. */
-  --animate-fade-up: fade-up 0.6s cubic-bezier(0.22, 1, 0.36, 1) both;
+  /* Subtle entrance animation */
+  --animate-fade-up: fade-up 0.5s cubic-bezier(0.22, 1, 0.36, 1) both;
 }
 
 body {
-  background-color: #ffffff;
-  color: var(--foreground);
+  background-color: #f3f6f8;
+  color: #172033;
 }
 
-/* ── Homepage entrance animation (reveal-only) ────────────────────────────
- * The hero staggers in with `animate-fade-up` and each section below glides
- * in on scroll through the `data-reveal` states driven by
- * components/ui/Reveal.tsx. Everything is one-shot; reduced-motion users see
- * content immediately and the `scripting` fallback keeps it visible when
- * JavaScript is unavailable.
- */
+/* ── Entrance animations ──────────────────────────── */
 @keyframes fade-up {
   from {
     opacity: 0;
-    transform: translateY(14px);
+    transform: translateY(12px);
   }
   to {
     opacity: 1;
@@ -88,18 +101,18 @@ body {
   }
 }
 
-/* Scroll-reveal primitive (see components/ui/Reveal.tsx) */
+/* Scroll-reveal primitive */
 [data-reveal="pending"] {
   opacity: 0;
-  transform: translateY(16px);
+  transform: translateY(14px);
 }
 
 [data-reveal="visible"] {
   opacity: 1;
   transform: none;
   transition:
-    opacity 0.6s cubic-bezier(0.22, 1, 0.36, 1),
-    transform 0.6s cubic-bezier(0.22, 1, 0.36, 1);
+    opacity 0.5s cubic-bezier(0.22, 1, 0.36, 1),
+    transform 0.5s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 @media (prefers-reduced-motion: reduce) {

@@ -1,8 +1,8 @@
 import Link from "next/link";
-import Image from "next/image";
-import { MapPin, Mail } from "lucide-react";
+import { MapPin, Mail, ShieldCheck } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { useI18n, type MessageKey } from "@/lib/i18n";
+import { CivoraLogo } from "@/components/ui/CivoraLogo";
 
 const quickLinks: { href: string; key: MessageKey }[] = [
   { href: "/", key: "home" },
@@ -21,48 +21,44 @@ const citizenServices: MessageKey[] = [
 
 const contact: { Icon: LucideIcon; key?: MessageKey; text?: string }[] = [
   { Icon: MapPin, key: "contactLocation" },
-  { Icon: Mail, text: "support@samarth.gov.in" },
+  { Icon: Mail, text: "support@civora.in" },
 ];
 
 export function SiteFooter() {
   const { t } = useI18n();
   return (
-    <footer className="border-t border-ink-100 bg-white">
+    <footer className="border-t border-[#E2E8F0] bg-white text-slate-600">
       {/* Main footer columns */}
-      <div className="grid gap-8 px-4 py-10 sm:px-6 lg:grid-cols-12 lg:px-8">
+      <div className="grid gap-8 px-4 py-12 sm:px-6 lg:grid-cols-12 lg:px-8 max-w-7xl mx-auto">
         {/* Brand */}
-        <div className="lg:col-span-4">
-          <div className="flex items-center gap-2">
-            <Image
-              src="/logo.png"
-              alt="SAMARTH Logo"
-              width={24}
-              height={24}
-              className="h-6 w-6 object-contain shrink-0"
-            />
-            <p className="text-sm font-bold text-ink-900">
-              SAMARTH
-            </p>
-          </div>
-          <p className="mt-1 text-[11px] font-semibold text-ink-600">
-            System for Accessible Management, Action, Resolution and Tracking of Hearings
+        <div className="lg:col-span-5 space-y-3">
+          <CivoraLogo size="sm" showWordmark={true} showTagline={false} />
+          <p className="text-xs font-bold uppercase tracking-wider text-teal-700">
+            AI-Powered Grievance Redressal & Management
           </p>
-          <p className="mt-2 text-xs leading-relaxed text-ink-500">
+          <p className="text-xs italic text-slate-500">
+            &ldquo;Every grievance deserves a resolution.&rdquo;
+          </p>
+          <p className="text-xs leading-relaxed text-slate-500 max-w-md">
             {t("footerAbout")}
           </p>
+          <div className="flex items-center gap-2 pt-2 text-xs text-slate-500">
+            <ShieldCheck size={16} className="text-teal-600 shrink-0" />
+            <span>Human-in-the-Loop Redressal & Institutional Oversight</span>
+          </div>
         </div>
 
         {/* Quick links */}
         <div className="lg:col-span-2">
-          <p className="text-xs font-semibold uppercase tracking-wider text-ink-700">
+          <p className="text-xs font-bold uppercase tracking-wider text-slate-900">
             {t("footerQuickLinks")}
           </p>
-          <ul className="mt-3 space-y-2 text-xs text-ink-500">
+          <ul className="mt-3.5 space-y-2.5 text-xs text-slate-600">
             {quickLinks.map((l) => (
               <li key={l.href}>
                 <Link
                   href={l.href}
-                  className="transition-colors hover:text-primary-700 hover:underline"
+                  className="transition-colors hover:text-teal-700 hover:underline"
                 >
                   {t(l.key)}
                 </Link>
@@ -72,13 +68,13 @@ export function SiteFooter() {
         </div>
 
         {/* Citizen services */}
-        <div className="lg:col-span-3">
-          <p className="text-xs font-semibold uppercase tracking-wider text-ink-700">
+        <div className="lg:col-span-2">
+          <p className="text-xs font-bold uppercase tracking-wider text-slate-900">
             {t("footerServicesHeading")}
           </p>
-          <ul className="mt-3 space-y-2 text-xs text-ink-500">
+          <ul className="mt-3.5 space-y-2.5 text-xs text-slate-600">
             {citizenServices.map((key) => (
-              <li key={key} className="transition-colors hover:text-ink-800">
+              <li key={key} className="transition-colors hover:text-slate-900">
                 {t(key)}
               </li>
             ))}
@@ -87,13 +83,13 @@ export function SiteFooter() {
 
         {/* Contact */}
         <div className="lg:col-span-3">
-          <p className="text-xs font-semibold uppercase tracking-wider text-ink-700">
+          <p className="text-xs font-bold uppercase tracking-wider text-slate-900">
             {t("footerContactHeading")}
           </p>
-          <ul className="mt-3 space-y-2.5 text-xs text-ink-500">
+          <ul className="mt-3.5 space-y-2.5 text-xs text-slate-600">
             {contact.map(({ Icon, key, text }) => (
               <li key={key ?? text} className="flex items-start gap-2">
-                <Icon size={13} className="mt-0.5 flex-shrink-0 text-primary-700" />
+                <Icon size={14} className="mt-0.5 shrink-0 text-teal-600" />
                 <span className="leading-relaxed">
                   {key ? t(key) : text}
                 </span>
@@ -103,19 +99,18 @@ export function SiteFooter() {
         </div>
       </div>
 
-      {/* Singular centered bottom footer — accountability note & copyright unified without separate sections */}
-      <div className="border-t border-ink-100 py-6 px-4 text-center space-y-2 sm:px-6 lg:px-8">
-        <p className="text-xs leading-relaxed text-ink-500">
-          <span className="font-semibold text-ink-700">
+      {/* Centered bottom footer: accountability and copyright */}
+      <div className="border-t border-[#E2E8F0] py-6 px-4 text-center space-y-2 sm:px-6 lg:px-8 bg-slate-50/60">
+        <p className="text-xs leading-relaxed text-slate-500 max-w-3xl mx-auto">
+          <span className="font-semibold text-slate-800">
             {t("accountabilityLabel")}
           </span>{" "}
           {t("accountabilityText")}
         </p>
-        <p className="text-xs text-ink-400">
-          © {new Date().getFullYear()} {t("copyright")}
+        <p className="text-xs text-slate-400">
+          © {new Date().getFullYear()} CIVORA &mdash; AI-Powered Grievance Redressal & Management Platform.
         </p>
       </div>
     </footer>
   );
 }
-

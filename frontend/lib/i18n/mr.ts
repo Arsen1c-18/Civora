@@ -33,7 +33,7 @@ const mr: Messages = {
   accountabilityLabel: "जवाबदारी:",
   accountabilityText:
     "विभागीय कृती व स्थिती बदल जवाबदार मानवीय पुनरावलोकनासाठी नोंदवले जातात.",
-  copyright: "SAMARTH — System for Accessible Management, Action, Resolution and Tracking of Hearings.",
+  copyright: "CIVORA — AI-Powered Grievance Redressal & Management Platform.",
 
   // ── Home: hero ──
   homeBadge: "राष्ट्रीय सार्वजनिक तक्रार पोर्टल",
@@ -496,8 +496,8 @@ const mr: Messages = {
   adminResetTokenGenerated: "One-time re-enrollment token generated (valid 24h). Provide this to the citizen in person:",
 
   // ── Home (redesigned 2026-10): hero ──
-  heroBadge: "SAMARTH — राष्ट्रीय तक्रार पोर्टल",
-  heroTitle: "प्रत्येक तक्रारला स्पष्ट पुढील पायरी हवी.",
+  heroBadge: "CIVORA — AI-आधारित तक्रार निवारण आणि व्यवस्थापन",
+  heroTitle: "प्रत्येक तक्रारीला निवारण मिळालेच पाहिजे.",
   heroSubtitle:
     "अचूक स्थान व पुरावा देताना सार्वजनिक व मांगेसदृश पायाभूत सुविधांच्या समस्या नोंदवा. तुमच्या तक्रारीचा पारदर्शी, पडताळलेल्या जीवनचक्रात मागोवा घ्या — अंतिम निर्णय अधिकृत अधिकारी घेतात.",
   heroCtaReport: "तक्रार नोंदवा",

@@ -1,7 +1,6 @@
 "use client";
 
 import Link from "next/link";
-import Image from "next/image";
 import { usePathname } from "next/navigation";
 import {
   Briefcase,
@@ -16,6 +15,7 @@ import {
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { NotificationBadgeLink } from "@/components/notifications/NotificationBadgeLink";
+import { CivoraLogo } from "@/components/ui/CivoraLogo";
 
 export interface SidebarLink {
   href: string;
@@ -64,9 +64,8 @@ export const roleLabelOf = (role: string | undefined) =>
 
 /**
  * Persistent sticky sidebar that replaces the top header for staff accounts
- * (department admin, resolver, superadmin). Always visible — no overlay or
- * toggling. Collapses to a 64px icon rail below `sm` so it never crowds out
- * small viewports.
+ * (department admin, resolver, superadmin). Always visible.
+ * Styled in institutional Deep Navy (#101D32) with Teal (#0D9488) active indicators.
  */
 export function StaffSidebar({
   links,
@@ -85,60 +84,62 @@ export function StaffSidebar({
 
   return (
     <aside
-      className="sticky top-0 flex h-screen w-16 shrink-0 flex-col border-r border-ink-200 bg-white sm:w-64"
+      className="sticky top-0 flex h-screen w-16 shrink-0 flex-col border-r border-[#192B45] bg-[#101D32] text-slate-200 sm:w-64 z-30"
       aria-label="Staff navigation"
     >
-      <Link
-        href="/"
-        className="flex h-14 items-center gap-3 border-b border-ink-100 px-3 sm:px-4"
-      >
-        <Image
-          src="/logo.png"
-          alt="SAMARTH Logo"
-          width={32}
-          height={32}
-          className="h-8 w-8 object-contain shrink-0"
-          priority
-        />
-        <span className="hidden text-sm font-bold tracking-tight text-ink-950 sm:block">
-          SAMARTH
-        </span>
-      </Link>
+      <div className="flex h-15 items-center border-b border-[#192B45] px-3 sm:px-4">
+        <CivoraLogo href="/" size="sm" variant="navy" showWordmark={true} showTagline={false} />
+      </div>
 
       <nav
         className="flex flex-1 flex-col gap-1 overflow-y-auto p-2 sm:p-3"
         aria-label="Staff links"
       >
-        {links.map(({ href, label, Icon }) => (
-          href === "/notifications" ? <NotificationBadgeLink key={`${label}-${href}`} Icon={Icon} label={label} active={linkIsActive(href)} className={`flex items-center justify-center gap-2.5 rounded-md px-3 py-2 text-sm font-medium transition-colors sm:justify-start ${linkIsActive(href) ? "bg-primary-50 text-primary-700" : "text-ink-600 hover:bg-ink-100/70 hover:text-ink-950"}`} /> : <Link
-            key={`${label}-${href}`}
-            href={href}
-            aria-current={linkIsActive(href) ? "page" : undefined}
-            title={label}
-            className={`flex items-center justify-center gap-2.5 rounded-md px-3 py-2 text-sm font-medium transition-colors sm:justify-start ${
-              linkIsActive(href)
-                ? "bg-primary-50 text-primary-700"
-                : "text-ink-600 hover:bg-ink-100/70 hover:text-ink-950"
-            }`}
-          >
-            <Icon size={18} className="shrink-0" />
-            <span className="hidden sm:inline">{label}</span>
-          </Link>
-        ))}
+        {links.map(({ href, label, Icon }) => {
+          const active = linkIsActive(href);
+          return href === "/notifications" ? (
+            <NotificationBadgeLink
+              key={`${label}-${href}`}
+              Icon={Icon}
+              label={label}
+              active={active}
+              className={`flex items-center justify-center gap-2.5 rounded-md px-3 py-2.5 text-sm font-semibold transition-colors sm:justify-start ${
+                active
+                  ? "bg-[#0D9488] text-white shadow-xs"
+                  : "text-slate-300 hover:bg-[#192B45] hover:text-white"
+              }`}
+            />
+          ) : (
+            <Link
+              key={`${label}-${href}`}
+              href={href}
+              aria-current={active ? "page" : undefined}
+              title={label}
+              className={`flex items-center justify-center gap-2.5 rounded-md px-3 py-2.5 text-sm font-semibold transition-colors sm:justify-start ${
+                active
+                  ? "bg-[#0D9488] text-white shadow-xs"
+                  : "text-slate-300 hover:bg-[#192B45] hover:text-white"
+              }`}
+            >
+              <Icon size={18} className="shrink-0" />
+              <span className="hidden sm:inline">{label}</span>
+            </Link>
+          );
+        })}
       </nav>
 
-      <div className="border-t border-ink-100 p-2 sm:p-3">
-        <p className="hidden truncate text-xs font-medium text-ink-600 sm:block">
+      <div className="border-t border-[#192B45] p-2 sm:p-3 bg-[#0B1320]/60">
+        <p className="hidden truncate text-xs font-medium text-slate-300 sm:block">
           {email || "Staff"}
         </p>
-        <span className="mt-1 hidden sm:inline-block rounded-sm border border-primary-200 bg-primary-50 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wider text-primary-700">
+        <span className="mt-1 hidden sm:inline-block rounded-sm border border-teal-500/40 bg-teal-950/60 px-2 py-0.5 text-[9px] font-bold uppercase tracking-wider text-teal-300">
           {roleLabel}
         </span>
         <button
           onClick={onSignOut}
           aria-label="Sign out"
           title="Sign out"
-          className="mt-2 flex w-full items-center justify-center gap-2 rounded-md bg-ink-100 px-3 py-2 text-xs font-semibold text-ink-700 transition-colors hover:bg-ink-200/80 hover:text-ink-950 sm:mt-3"
+          className="mt-2 flex w-full items-center justify-center gap-2 rounded-md bg-[#192B45] px-3 py-2 text-xs font-semibold text-slate-200 transition-colors hover:bg-[#243B5E] hover:text-white sm:mt-3 cursor-pointer"
         >
           <LogOut size={14} className="shrink-0" />
           <span className="hidden sm:inline">Sign out</span>

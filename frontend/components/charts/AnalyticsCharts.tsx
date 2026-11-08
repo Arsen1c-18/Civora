@@ -37,20 +37,20 @@ import { getSlaInfo } from "@/lib/sla";
 import type { Grievance } from "@/lib/types";
 
 // ── Colors ───────────────────────────────────────────────────────────────────
-const C_RECEIVED = "#ff5500"; // SAMARTH primary orange
+const C_RECEIVED = "#0D9488"; // CIVORA primary teal
 const C_RESOLVED = "#16a34a"; // emerald green
-const C_OPEN     = "#f97316"; // amber-orange
-const C_OVERDUE  = "#dc2626"; // red
+const C_OPEN     = "#2563eb"; // information blue
+const C_OVERDUE  = "#dc2626"; // semantic error
 
 const STATUS_COLORS: Record<string, string> = {
-  SUBMITTED:   "#94a3b8",
-  ASSIGNED:    "#3b82f6",
-  IN_PROGRESS: "#f97316",
+  SUBMITTED:   "#64748b",
+  ASSIGNED:    "#2563eb",
+  IN_PROGRESS: "#0d9488",
   RESOLVED:    "#16a34a",
-  CLOSED:      "#052e16",
-  ESCALATED:   "#7c3aed",
-  REJECTED:    "#ef4444",
-  WITHDRAWN:   "#6b7280",
+  CLOSED:      "#101d32",
+  ESCALATED:   "#dc2626",
+  REJECTED:    "#94a3b8",
+  WITHDRAWN:   "#cbd5e1",
 };
 
 type RangeKey = "7d" | "30d" | "90d" | "all";
