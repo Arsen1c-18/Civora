@@ -1,0 +1,219 @@
+export interface HfEngine {
+  category: string;
+  priority: string;
+  isUrgent: boolean;
+  keywords: string[];
+  explanation: string;
+  rawCategoryLabel?: string;
+  categoryConfidence?: number;
+  urgentMatches?: string[];
+  modelInfo?: {
+    categorySource?: string;
+    categoryOutcome?: "categorized" | "other" | "uncertain" | "out_of_scope";
+    categoryConfidenceSemantics?:
+      | "uncalibrated_model_probability"
+      | "uncalibrated_zero_shot_score"
+      | "unavailable";
+  };
+}
+
+export interface Grievance {
+  id: string;
+  title: string;
+  description: string;
+  userId?: string | null;
+  status: string;
+  category: string;
+  priority: string;
+  createdAt: string;
+  imageUrl?: string | null;
+  imagePublicId?: string | null;
+  imageValidation?: {
+    ok: boolean;
+    status?: "validated" | "unverified";
+    llm_score?: number | null;
+    explanation?: string;
+  } | null;
+  latitude?: number | null;
+  longitude?: number | null;
+  address?: string | null;
+  hfEngine?: HfEngine | null;
+  assignee?: string | null;
+  state?: string;
+  departmentId?: string | null;
+  ownerId?: string | null;
+  managerId?: string | null;
+  dueDate?: string | null;
+  resolvedAt?: string | null;
+  closedAt?: string | null;
+  stateHistory?: StateHistoryEntry[] | null;
+  assignmentHistory?: StateHistoryEntry[] | null;
+  resolution?: {
+    text?: string;
+    actions?: string[];
+    by?: string;
+    at?: string;
+    completionPhotoUrl?: string | null;
+    supportingDocumentUrl?: string | null;
+  } | null;
+  resolutionFeedback?: {
+    rating: number;
+    comment: string;
+    isSatisfied: boolean;
+    submittedAt: string;
+  } | null;
+  escalation?: {
+    issueType?: string;
+    reason?: string;
+    description?: string;
+    suggestedAction?: string | null;
+    evidenceUrl?: string | null;
+    by?: string;
+    at?: string;
+    status?: string;
+    managerResponse?: string;
+    reviewedAt?: string;
+  } | null;
+  /** Quality gate (DEC-049): "suspicious" when AI flagged as non-civic content. */
+  qualityFlag?: string | null;
+  qualityReason?: string | null;
+}
+
+export interface StateHistoryEntry {
+  from?: string;
+  to?: string;
+  by?: string;
+  byRole?: string;
+  reason?: string;
+  at?: string;
+  createdAt?: string;
+  bodyCustomer?: string;
+  bodyInternal?: string;
+  visibility?: string;
+  kind?: string;
+  [key: string]: unknown;
+}
+
+export interface SubmitPayload {
+  title: string;
+  description: string;
+  userId?: string;
+  latitude?: number;
+  longitude?: number;
+  imageUrl?: string;
+  imagePublicId?: string;
+  address?: string;
+}
+
+export interface SubmitResult {
+  message: string;
+  grievanceId: string;
+  hfEngine: HfEngine;
+  /** True when the relevance gate stored this submission in REJECTED state. */
+  rejected?: boolean;
+  /** Quality gate (DEC-049): true when backend flagged as non-civic content. */
+  flagged?: boolean;
+  flagReason?: string | null;
+}
+
+export type VoiceLanguage = "en-IN" | "hi-IN" | "mr-IN";
+export interface TranscriptionResult {
+  transcript: string;
+  language_code: VoiceLanguage | null;
+  request_id?: string;
+}
+
+export interface SignupProfile {
+  address: string;
+  dob: string;
+  occupation: string;
+  gender: string;
+}
+
+export interface CaptchaSolution {
+  captcha_id: string;
+  captcha_solution: string;
+}
+
+export interface AuthUser {
+  id: string;
+  email?: string | null;
+  phone?: string | null;
+  phoneVerifiedAt?: string | null;
+  phoneVerifiedMethod?: string | null;
+  smsConsent?: boolean;
+  smsOptOutAt?: string | null;
+  citizen_id?: string | null;
+  name: string;
+  address?: string | null;
+  dob?: string | null;
+  occupation?: string | null;
+  gender?: string | null;
+  role: "USER" | "ADMIN" | "RESOLVER" | "SUPERADMIN" | "citizen" | "admin" | string;
+  avatarUrl?: string;
+  departmentId?: string | null;
+  authMethod?: string;
+}
+
+export interface AuthResponse {
+  access_token: string;
+  refresh_token: string;
+  token_type: string;
+  user: {
+    id: string;
+    email?: string | null;
+    phone?: string | null;
+    phoneVerifiedAt?: string | null;
+    phoneVerifiedMethod?: string | null;
+    smsConsent?: boolean;
+    smsOptOutAt?: string | null;
+    citizen_id?: string | null;
+    full_name: string;
+    address?: string | null;
+    dob?: string | null;
+    occupation?: string | null;
+    gender?: string | null;
+    role: string;
+    avatar_url?: string;
+    departmentId?: string | null;
+    auth_method?: string;
+  };
+}
+
+/** POST /auth/login pauses here when a privileged account opted into the
+ *  optional face step (DEC-024): a short-lived pending token instead of the
+ *  full pair. The pending token only unlocks /auth/face/verify-second-factor
+ *  and /auth/complete-pending — never protected routes. */
+export interface FacePendingResponse {
+  two_factor: "face";
+  token_type: string;
+  pending_token: string;
+}
+
+/** POST /auth/face/challenge — one single-use liveness prompt, 30 s TTL.
+ *  The frames captured against it must perform `action`. */
+export interface FaceChallenge {
+  challenge_id: string;
+  action: string;
+  expires_in: number;
+}
+
+export interface ImageValidation {
+  ok: boolean;
+  status?: "validated" | "unverified";
+  llm_score?: number | null;
+  explanation?: string;
+}
+
+// Must match CATEGORY_KEYS in backend/app/services/classification.py — the
+// server only ever emits these keys.
+export const CATEGORIES = [
+  "water",
+  "roads",
+  "transport",
+  "electricity",
+  "sanitation",
+  "health",
+  "governance",
+  "other",
+] as const;

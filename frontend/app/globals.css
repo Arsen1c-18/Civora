@@ -1,0 +1,123 @@
+@import "tailwindcss";
+
+:root {
+  --background: #ffffff;
+  --foreground: #18181b;
+  /* Scale overall UI by 20% across the entire application */
+  font-size: 120%;
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+
+  /*
+   * Bright, vibrant civic orange primary palette.
+   *
+   * 600 (#ff5500) is the signature vivid accent used for CTAs, focus rings,
+   * badges, and high-energy interactive surfaces.
+   * 700 (#e04800) is a rich, saturated orange providing solid contrast on
+   * light backgrounds without appearing muddy or brown.
+   */
+  --color-primary-50: #fff7ed;
+  --color-primary-100: #ffedd5;
+  --color-primary-200: #fed7aa;
+  --color-primary-300: #fdba74;
+  --color-primary-400: #fb923c;
+  --color-primary-500: #ff6f00;
+  --color-primary-600: #ff5500;
+  --color-primary-700: #e04800;
+  --color-primary-800: #b33600;
+  --color-primary-900: #802600;
+  --color-primary-950: #4a1400;
+
+  /* True neutral greys (zinc) — no blue cast */
+  --color-ink-50: #fafafa;
+  --color-ink-100: #f4f4f5;
+  --color-ink-200: #e4e4e7;
+  --color-ink-300: #d4d4d8;
+  --color-ink-400: #a1a1aa;
+  --color-ink-500: #71717a;
+  --color-ink-600: #52525b;
+  --color-ink-700: #3f3f46;
+  --color-ink-800: #27272a;
+  --color-ink-900: #18181b;
+  --color-ink-950: #09090b;
+
+  --font-sans: var(--font-geist-sans), system-ui, -apple-system, "Segoe UI",
+    Roboto, Arial, sans-serif;
+  --font-mono: var(--font-geist-mono), ui-monospace, monospace;
+
+  /* Halved border radius scale for crisp, professional civic UI */
+  --radius-xs: 1px;
+  --radius-sm: 2px;
+  --radius-md: 3px;
+  --radius-lg: 4px;
+  --radius-xl: 6px;
+  --radius-2xl: 8px;
+  --radius-3xl: 12px;
+  --radius: 4px;
+
+  /* Homepage hero entrance: one-shot both-fill so nothing flashes before
+   * the staggered `[animation-delay:…]` classes start. */
+  --animate-fade-up: fade-up 0.6s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+body {
+  background-color: #ffffff;
+  color: var(--foreground);
+}
+
+/* ── Homepage entrance animation (reveal-only) ────────────────────────────
+ * The hero staggers in with `animate-fade-up` and each section below glides
+ * in on scroll through the `data-reveal` states driven by
+ * components/ui/Reveal.tsx. Everything is one-shot; reduced-motion users see
+ * content immediately and the `scripting` fallback keeps it visible when
+ * JavaScript is unavailable.
+ */
+@keyframes fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* Scroll-reveal primitive (see components/ui/Reveal.tsx) */
+[data-reveal="pending"] {
+  opacity: 0;
+  transform: translateY(16px);
+}
+
+[data-reveal="visible"] {
+  opacity: 1;
+  transform: none;
+  transition:
+    opacity 0.6s cubic-bezier(0.22, 1, 0.36, 1),
+    transform 0.6s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-fade-up {
+    animation: none;
+  }
+
+  [data-reveal="pending"],
+  [data-reveal="visible"] {
+    opacity: 1;
+    transform: none;
+    transition: none;
+  }
+}
+
+@media (scripting: none) {
+  [data-reveal="pending"] {
+    opacity: 1;
+    transform: none;
+  }
+}

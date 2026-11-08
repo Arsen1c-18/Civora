@@ -1,0 +1,121 @@
+import Link from "next/link";
+import Image from "next/image";
+import { MapPin, Mail } from "lucide-react";
+import type { LucideIcon } from "lucide-react";
+import { useI18n, type MessageKey } from "@/lib/i18n";
+
+const quickLinks: { href: string; key: MessageKey }[] = [
+  { href: "/", key: "home" },
+  { href: "/submit", key: "register" },
+  { href: "/track", key: "track" },
+  { href: "/login", key: "signIn" },
+  { href: "/register", key: "createAccount" },
+];
+
+const citizenServices: MessageKey[] = [
+  "svcRegister",
+  "svcTrack",
+  "svcAssign",
+  "svcAi",
+];
+
+const contact: { Icon: LucideIcon; key?: MessageKey; text?: string }[] = [
+  { Icon: MapPin, key: "contactLocation" },
+  { Icon: Mail, text: "support@samarth.gov.in" },
+];
+
+export function SiteFooter() {
+  const { t } = useI18n();
+  return (
+    <footer className="border-t border-ink-100 bg-white">
+      {/* Main footer columns */}
+      <div className="grid gap-8 px-4 py-10 sm:px-6 lg:grid-cols-12 lg:px-8">
+        {/* Brand */}
+        <div className="lg:col-span-4">
+          <div className="flex items-center gap-2">
+            <Image
+              src="/logo.png"
+              alt="SAMARTH Logo"
+              width={24}
+              height={24}
+              className="h-6 w-6 object-contain shrink-0"
+            />
+            <p className="text-sm font-bold text-ink-900">
+              SAMARTH
+            </p>
+          </div>
+          <p className="mt-1 text-[11px] font-semibold text-ink-600">
+            System for Accessible Management, Action, Resolution and Tracking of Hearings
+          </p>
+          <p className="mt-2 text-xs leading-relaxed text-ink-500">
+            {t("footerAbout")}
+          </p>
+        </div>
+
+        {/* Quick links */}
+        <div className="lg:col-span-2">
+          <p className="text-xs font-semibold uppercase tracking-wider text-ink-700">
+            {t("footerQuickLinks")}
+          </p>
+          <ul className="mt-3 space-y-2 text-xs text-ink-500">
+            {quickLinks.map((l) => (
+              <li key={l.href}>
+                <Link
+                  href={l.href}
+                  className="transition-colors hover:text-primary-700 hover:underline"
+                >
+                  {t(l.key)}
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </div>
+
+        {/* Citizen services */}
+        <div className="lg:col-span-3">
+          <p className="text-xs font-semibold uppercase tracking-wider text-ink-700">
+            {t("footerServicesHeading")}
+          </p>
+          <ul className="mt-3 space-y-2 text-xs text-ink-500">
+            {citizenServices.map((key) => (
+              <li key={key} className="transition-colors hover:text-ink-800">
+                {t(key)}
+              </li>
+            ))}
+          </ul>
+        </div>
+
+        {/* Contact */}
+        <div className="lg:col-span-3">
+          <p className="text-xs font-semibold uppercase tracking-wider text-ink-700">
+            {t("footerContactHeading")}
+          </p>
+          <ul className="mt-3 space-y-2.5 text-xs text-ink-500">
+            {contact.map(({ Icon, key, text }) => (
+              <li key={key ?? text} className="flex items-start gap-2">
+                <Icon size={13} className="mt-0.5 flex-shrink-0 text-primary-700" />
+                <span className="leading-relaxed">
+                  {key ? t(key) : text}
+                </span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      </div>
+
+      {/* Singular centered bottom footer — accountability note & copyright unified without separate sections */}
+      <div className="border-t border-ink-100 py-6 px-4 text-center space-y-2 sm:px-6 lg:px-8">
+        <p className="text-xs leading-relaxed text-ink-500">
+          <span className="font-semibold text-ink-700">
+            {t("accountabilityLabel")}
+          </span>{" "}
+          {t("accountabilityText")}
+        </p>
+        <p className="text-xs text-ink-400">
+          © {new Date().getFullYear()} {t("copyright")}
+        </p>
+      </div>
+    </footer>
+  );
+}
+

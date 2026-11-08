@@ -1,0 +1,526 @@
+# DEVELOPMENT.md — Local Development Setup
+
+> Update this file when scaffold, commands, or configuration changes.
+
+---
+
+## Prerequisites
+
+Stage 4B backend setup: [VOICE_ASSISTED_COMPLAINT.md](VOICE_ASSISTED_COMPLAINT.md).
+Root runtime requirements explicitly declare httpx/python-multipart and align
+auth/SMS dependencies with backend/requirements.txt. STT tests use mocks only.
+
+Stage 5 frontend mock checks: in frontend/, run `npm run test:voice` (Node test
+runner + dev-only jsdom). Recording uses AudioWorklet and genuine PCM WAV; no
+backend enablement or live provider call is needed. See the feature document for
+browser requirements, lifecycle, test coverage and current lint limitations.
+
+| Tool | Version | Purpose |
+|---|---|---|
+| Python | 3.11+ | Backend |
+| Node.js | 20+ | Frontend |
+| npm | 10+ | Frontend package manager |
+| MongoDB | 7+ (or an Atlas free cluster) | Database |
+| Git | any recent | Version control |
+
+Optional but recommended:
+- `pyenv` for Python version management
+- `nvm` for Node.js version management
+- Docker (for a local MongoDB, if preferred over Atlas)
+
+---
+
+## Repository Structure
+
+```
+/
+├── frontend/       — Next.js (TypeScript) app
+├── backend/app/    — FastAPI (Python) app
+├── tools/          — batch recategorization script
+├── docs/           — Technical documentation
+└── memory/         — AI agent persistent memory
+```
+
+---
+
+## Database Setup
+
+The backend needs `MONGODB_URI` to persist data. **Without it the API still
+boots** and uses a non-persistent in-memory store — `GET /health` tells you
+which is active (`"storage": "mongodb"` or `"in-memory"`).
+
+### Option A: MongoDB Atlas (recommended, free tier)
+
+1. Atlas → Database → Add → Free (M0) → Connect → Drivers → copy the URI.
+2. Put it in `backend/.env` (see below). The `grievances` collection and its
+   indexes are created automatically on first boot.
+
+### Option B: Local MongoDB (Docker)
+
+```bash
+docker run -d --name grievance-mongo -p 27017:27017 mongo:7
+# then: MONGODB_URI=mongodb://localhost:27017
+```
+
+### Option C: Local MongoDB (system package)
+
+```bash
+mongod --dbpath /path/to/data --port 27017
+```
+
+**No migrations** — MongoDB is schemaless; the indexes (`uniq_grievance_id`,
+`user_created`) are created at startup by `backend/app/db.py`.
+
+---
+
+## Backend Setup
+
+```bash
+# From the repository root
+# 1. (Optional) Create and activate virtual environment:
+python -m venv venv
+# Linux/macOS (Bash/Zsh): source venv/bin/activate
+# Linux (Fish):          source venv/bin/activate.fish
+# Windows (PowerShell):  .\venv\Scripts\Activate.ps1
+# Windows (cmd.exe):     venv\Scripts\activate.bat
+# (Skip venv creation if using Conda, Docker, or system Python)
+
+# 2. Install dependencies
+pip install -r backend/requirements.txt  # runtime — what Render installs
+pip install -r requirements-dev.txt      # runtime + pytest (local dev/tests)
+
+# 2b. (Optional) face-auth stack — only needed to run with FACE_AUTH_ENABLED=true
+pip install --no-deps insightface==2.1
+pip install -r backend/requirements-face.txt   # onnxruntime, headless OpenCV, scikit-image
+
+# 3. Configure environment
+cp backend/.env.example backend/.env    # Windows PowerShell: Copy-Item backend\.env.example backend\.env
+# Edit backend/.env and fill in your values (or leave blank to use in-memory mode)
+
+# 4. Start development server (universal python -m runner)
+python -m uvicorn backend.app.main:app --reload --host 127.0.0.1 --port 10000
+```
+
+Backend API available at: `http://localhost:10000`
+Interactive docs: `http://localhost:10000/docs` (Swagger UI)
+Alternative docs: `http://localhost:10000/redoc`
+
+### Phone OTP and SMS prototype
+
+The default `SMS_PROVIDER=dry-run` sends no external messages. To exercise
+phone binding locally, set `OTP_DEBUG_RETURN_CODE=true` in the local
+`backend/.env`; the authenticated OTP request returns a demo code in its JSON
+response. Keep this false outside local testing. `SMS_PROVIDER=off` disables
+stage dispatch entirely.
+
+`SMS_PROVIDER=twilio` enables live delivery through a Twilio Messaging
+Service. Operator checklist (all dashboard-side; nothing secret goes in git):
+
+1. Twilio account with a Messaging Service; note its `MG...` SID.
+2. Indian DLT registration: entity ID, 6-character sender header, and one
+   approved content template per message (`DLT_TEMPLATE_ID_STAGE`,
+   `DLT_TEMPLATE_ID_OTP`). Carriers drop anything unregistered or drifted
+   from the approved text — keep `render_stage_message()` /
+   `render_otp_message()` in `backend/app/services/sms.py` verbatim in sync
+   with the registered templates.
+3. Fill `TWILIO_ACCOUNT_SID`, `TWILIO_AUTH_TOKEN`,
+   `TWILIO_MESSAGING_SERVICE_SID`, `DLT_ENTITY_ID`, `DLT_TEMPLATE_ID_STAGE`,
+   `DLT_TEMPLATE_ID_OTP` in `backend/.env` (local) or the Render dashboard
+   (`sync: false` entries already in `render.yaml`). Empty values fail closed:
+   the provider refuses to send rather than erroring.
+4. Trial accounts only reach verified numbers — upgrade and verify
+   end-to-end ( dry-run log → live receipt) before opening to citizens.
+
+**Demo route (2026-10-20):** set the Render service to use the Trial account's
+US long code through Twilio's **international** gateway. That route does not
+require DLT, but Trial can only deliver to the verified number ending `7009`. For full citizen delivery, upgrade the account and move to the domestic
+DLT route: register the Principal Entity, 6-character sender header, and the
+stage/OTP templates, then add the Indian sender to the Messaging Service. The
+`DLT_*` variables are traceability only; Twilio's console registration is what
+enables domestic delivery. The OTP body now says **SAMARTH** — register that
+exact text when DLT starts.
+
+Watch the 160 GSM-7 character cap: over-long stage bodies are skipped, and
+each segment is billed. Keep `FRONTEND_URL` short or drop the track link
+*before* registering the DLT stage template.
+
+> Run `uvicorn` from the **repository root** (not from inside `backend/`) so
+> that `backend.app` resolves as a package.
+
+---
+
+## Running Tests
+
+```bash
+# From the repository root
+pip install -r requirements-dev.txt
+pytest                      # all tests
+pytest tests/test_endpoints.py -v
+```
+
+The suite has grown well past its original nine files; the face-auth suite is
+the newest addition:
+
+| File | Covers |
+|---|---|
+| `tests/test_classification.py` | Keyword classifier, priority/urgency rules, sentiment normalisation, and the `CATEGORY_KEYS` ↔ frontend `CATEGORIES` contract |
+| `tests/test_classification_cascade.py` | The HF → Groq → keyword cascade, including provider-outage fallback and the submit-time `modelInfo` shape |
+| `tests/test_config_drift.py` | Drift between `config.py`, `backend/.env.example`, `frontend/.env.example` and `render.yaml` — plus secret-leak and wildcard-CORS checks |
+| `tests/test_endpoints.py` | HTTP behaviour of the real FastAPI app (request/response shapes, status codes, error format, limit bounds, unicode/injection round-trips) |
+| `tests/test_face_auth.py` | Face auth (DEC-024): liveness/quality units, endpoints, pending-token step-up, lockouts, MODEL_MISMATCH, tunable thresholds — synthetic frames + a fake detection seam, no camera or model download |
+| `tests/test_id_allocation.py` | DEC-014: ids derived from stored data — restart resumption, year rollover, out-of-order ids, concurrent creates |
+| `tests/test_image_validation.py` | `/validate-image` contract and the accept/reject threshold boundary, plus the (documented) SSRF surface |
+| `tests/test_repository.py` | Both `GrievanceRepository` implementations + repository selection + the shared list contract |
+| `tests/test_security_baseline.py` | **Asserts current insecure behaviour on purpose** — the "before" state Phase 1 must invert |
+| `tests/test_status_vocabularies.py` | The four conflicting status vocabularies DEC-006 must migrate together, parsed from source |
+
+Tests named `test_BASELINE_*` document a known gap rather than a requirement:
+they pass today and are meant to **fail** once the corresponding phase lands,
+which is the signal to rewrite them as assertions of the new behaviour.
+
+**Endpoint and in-memory tests always run** — `tests/conftest.py` pins
+`MONGODB_URI=""` (and disables LLM keys) before `backend.app` is imported, so
+they never touch a real database or the network.
+
+**MongoDB tests skip unless a test database is reachable.** They default to
+`mongodb://127.0.0.1:27017` and drop their collection before/after each test:
+
+```bash
+mongod --dbpath /path/to/scratch --port 27017 --fork --logpath /tmp/mongod.log
+pytest                                  # Mongo tests now run
+mongod --dbpath /path/to/scratch --shutdown
+```
+
+Override with `TEST_MONGODB_URI` / `TEST_MONGODB_DB` to point elsewhere.
+
+### End-to-end check (frontend client ↔ live backend)
+
+```bash
+# terminal 1 — backend (with or without MONGODB_URI)
+uvicorn backend.app.main:app --host 127.0.0.1 --port 10000
+
+# terminal 2 — the real frontend API client against it
+NEXT_PUBLIC_API_URL=http://localhost:10000 node frontend/scripts/e2e.mjs
+```
+
+`frontend/scripts/e2e.mjs` imports `frontend/lib/api.ts` itself, so every
+response is validated by the same zod schemas the UI uses — submit → track →
+admin assign/resolve → re-read. It needs **Node 23.6+** (TypeScript type
+stripping is on by default there — earlier versions need
+`--experimental-strip-types`) and a backend already running; it is **not** part
+of `pytest`.
+
+### Contract checks (frontend only — no backend needed)
+
+```bash
+node frontend/scripts/check-contract.mjs
+```
+
+Stubs `fetch` rather than calling anything, so it runs offline and gates CI.
+It pins `roleForEmail` / `isAdminEmail` (including the deliberate `BASELINE`
+escalation that Phase 1 must remove), the `useMocks()` switch — which turns
+mocks off **only** for the exact string `"false"`, so `"FALSE"` or `0` silently
+serves fabricated data — and the zod schemas against backend-shaped JSON.
+
+That last part matters because `z.object()` strips undeclared keys without
+failing: a field the backend sends but the schema omits parses cleanly and
+then simply never reaches the UI. `hfEngine.categoryConfidence` shipped that
+way for a while — live data lost the confidence display that mock data kept.
+
+### Citizen-side test plan and manual cases
+
+[`docs/USER_SIDE_TEST_CASES.md`](USER_SIDE_TEST_CASES.md) is the user-facing
+test plan, case suite, E2E journey set, traceability matrix, and gap register.
+It contains **170 module cases and 12 journeys that have not been executed**;
+it is documentation, not test code. Use it for manual release validation and
+as the specification for new Playwright/API tests. Do not cite it as evidence
+that a feature passes. The existing pytest, contract, and voice suites above
+remain the only automated coverage.
+
+---
+
+## Frontend Setup
+
+```bash
+cd frontend
+
+# Install dependencies
+npm install
+
+# Configure environment
+cp .env.example .env.local
+# Edit .env.local and fill in your values
+
+# Start development server
+npm run dev
+```
+
+Frontend available at: `http://localhost:3000`
+
+---
+
+## Environment Variables
+
+### Backend (`backend/.env`)
+
+See `backend/.env.example` for the authoritative list. The ones that matter
+day-to-day:
+
+```env
+# Database (leave empty to use the non-persistent in-memory fallback)
+MONGODB_URI=mongodb+srv://user:pass@cluster.mongodb.net/
+MONGODB_DB=grievance
+
+# LLM classification (optional — keyword rules are used without them)
+GROQ_API_KEY=
+GROQ_MODEL=llama-3.3-70b-versatile
+HF_API_TOKEN=
+
+# CORS
+CORS_ORIGINS=http://localhost:3000
+
+# Server
+PORT=10000
+
+# Face auth (optional, DEC-024 — off by default; see backend/.env.example)
+FACE_AUTH_ENABLED=false
+# FACE_EMBED_KEY (required when the flag is on), FACE_MODEL_NAME,
+# FACE_MODEL_ROOT, FACE_ORT_THREADS, FACE_MATCH_THRESHOLD, and the tunable
+# liveness thresholds (FACE_TURN_MIN_DEGREES, FACE_BLINK_EAR_DROP,
+# FACE_SMILE_MOUTH_WIDEN, FACE_MIN_BLUR_VARIANCE, FACE_MIN_FACE_PX) are
+# documented in .env.example
+```
+
+> JWT auth (DEC-017) reads `JWT_SECRET_KEY`, `ACCESS_TOKEN_EXPIRE_MINUTES`,
+> `REFRESH_TOKEN_EXPIRE_DAYS` and the seed/Google OAuth vars from
+> `backend/.env` — see `backend/.env.example`.
+
+### Frontend (`frontend/.env.local`)
+
+```env
+NEXT_PUBLIC_API_URL=http://localhost:10000
+NEXT_PUBLIC_USE_MOCKS=true        # false = talk to the live backend
+NEXT_PUBLIC_SHOW_DEV_CREDS=false  # local only, never enable in production
+```
+
+> NextAuth / Google OAuth vars were removed along with the Firebase client —
+> auth is a demo/localStorage session for now.
+
+---
+
+## Schema Changes
+
+There is **no migration tool** — MongoDB is schemaless. To change the shape of
+a grievance:
+
+1. Update `backend/app/models.py` (Pydantic) and `backend/app/db.py`.
+2. Existing documents keep their old shape; read paths should tolerate missing
+   fields (`to_api()` in `db.py` already defaults them).
+3. If an index needs to change, drop/recreate it in `ensure_indexes()`
+   (`backend/app/db.py`).
+
+For a one-off data fix, use `tools/recategorize.py --dry-run` first, then drop
+`--dry-run` to apply.
+
+---
+
+## Development Commands
+
+### Backend
+
+| Command | Description |
+|---|---|
+| `uvicorn backend.app.main:app --reload --port 10000` | Start dev server with hot reload (from repo root) |
+| `pytest` | Run all tests (from repo root) |
+| `pytest tests/test_endpoints.py -v` | Run specific test file |
+| `python tools/recategorize.py --dry-run` | Preview batch re-classification |
+| `python -m ruff check backend/app/` | Lint with Ruff |
+| `python -m ruff format backend/app/` | Format with Ruff |
+
+### Frontend
+
+| Command | Description |
+|---|---|
+| `npm run dev` | Start dev server |
+| `npm run build` | Build for production with Next.js Webpack (the configured production build path) |
+| `npm run start` | Start production build |
+| `npm run test` | Run tests |
+| `npm run lint` | ESLint |
+| `npm run type-check` | TypeScript type check |
+
+---
+
+## Git Workflow
+
+1. Work on feature branches: `git checkout -b feature/phase-1-scaffold`
+2. Commit meaningful units of work with clear messages
+3. Never commit to `main` directly without review
+4. Update `memory/` files as part of the feature branch (not as a separate commit)
+5. PR description should reference relevant PRD requirement IDs (e.g., `FR-AUTH-001`)
+
+---
+
+## Conventions
+
+### Backend (Python)
+
+- Follow PEP 8 / Ruff defaults
+- Use type hints throughout
+- FastAPI routers in `backend/app/routers/` — one file per domain
+- Business logic in `backend/app/services/` — not in routers
+- Pydantic request/response models in `backend/app/models.py`
+- Persistence behind the `GrievanceRepository` protocol in `backend/app/db.py`
+- No hardcoded configuration values — read them in `backend/app/config.py` via
+  `python-dotenv`
+
+### Frontend (TypeScript)
+
+- Strict TypeScript (`strict: true` in tsconfig)
+- React Server Components by default; use `"use client"` only when needed
+- Shared types in `lib/types.ts`
+- API calls centralized in `lib/api.ts`
+- Component files: `PascalCase.tsx`
+- Utility files: `camelCase.ts`
+
+---
+
+## Common Issues
+
+**`"storage": "in-memory"` in `/health`:**
+```
+MONGODB_URI is empty or unreachable. Set it in backend/.env and restart.
+Data written while in-memory is lost on restart.
+```
+
+**MongoDB index/ping failed at startup:**
+```
+The URI is set but the cluster isn't reachable (network, IP allowlist, or
+bad credentials). The API will error on reads/writes until it connects.
+```
+
+**CORS error from frontend:**
+```
+Check CORS_ORIGINS in backend/.env matches the frontend origin exactly
+(default: http://localhost:3000).
+```
+
+**Frontend shows demo data instead of live data:**
+```
+NEXT_PUBLIC_USE_MOCKS must be "false" in frontend/.env.local, and the backend
+must be running on :10000. Check the error banner in the UI.
+```
+
+**`ModuleNotFoundError: No module named 'backend'`:**
+```
+Run uvicorn from the repository root, not from inside backend/.
+```
+
+### 2026-10-14 ? Write-free diagnostic initialization
+
+DIAGNOSTIC_SKIP_INITIALIZATION_WRITES=true is a process-local, default-off diagnostic option suppressing MongoDB initialization indexes/default seeds and startup backfill/seeding. It does not disable endpoint writes. Keep false in normal deployments. Use one worker without reload, transcription disabled, and lifespan off; see docs/VOICE_ASSISTED_COMPLAINT.md for the verified-CA launcher and fail-closed authentication verification. Backend restart remains pending separate authorization.
+
+Stage 11 status: guarded local login restoration did not succeed. The last retry
+failed on incompatible TLS URI options; the guide now contains a corrected,
+unexecuted proposal. See ../HANDOFF_SUMMARY.md and the voice guide before any
+separately approved restart. Keep both diagnostic initialization and transcription
+flags false in normal operation.
+
+---
+
+## Deploying (backend on Render, frontend on Vercel)
+
+Deploy the **backend first** — the frontend build needs its public URL.
+
+### 1. Backend → Render
+
+1. New Web Service from the repo; Render reads `render.yaml` (build installs
+   `backend/requirements.txt`, then the optional face stack and the pruned
+   `buffalo_s` model — see `buildCommand`; start:
+   `uvicorn backend.app.main:app --host 0.0.0.0 --port $PORT`). The first build
+   downloads the 122 MB model archive but extracts only the three ONNX files
+   the app uses.
+2. Fill the `sync: false` vars in the dashboard: `MONGODB_URI` (Atlas —
+   allow Render to reach the cluster), `CORS_ORIGINS` (leave unset until the
+   Vercel URL exists; the `*` fallback works but is wide open, so tighten it
+   right after), `FRONTEND_URL` (Vercel URL, once known — SMS track links
+   otherwise point at the dev default), `HF_API_TOKEN`, `GROQ_API_KEY`,
+   Cloudinary keys, `GOOGLE_CLIENT_ID`/`GOOGLE_CLIENT_SECRET`.
+3. `JWT_SECRET_KEY` generates itself. Set `SEED_ADMIN_EMAIL` +
+   `SEED_ADMIN_PASSWORD`, then **restart** the service (seeding runs at
+   startup; it is a no-op if the admin already exists).
+4. Twilio: for the international demo set `SMS_PROVIDER=twilio` and the three
+   `TWILIO_*` values; leave the `DLT_*` fields empty. Trial delivers only to
+   the verified number. `OTP_DEBUG_RETURN_CODE` must stay false. Face auth:
+   set `FACE_AUTH_ENABLED=true` and `FACE_EMBED_KEY` (the key that encrypted
+   the existing templates, or re-enroll); keep `FACE_MODEL_ROOT` at the build
+   path and `FACE_ORT_THREADS=1` on the free instance. Free (512 MB / 0.1 CPU)
+   is tight — upgrade if the model preload OOMs or liveness is too slow.
+5. Verify `GET /health` → `{"status":"ok","storage":"mongodb"}`.
+
+**Face auth on Render (free-first).** The build installs `insightface==2.1`
+without dependencies (so the headless OpenCV wheel in
+`backend/requirements-face.txt` wins), then
+`backend/scripts/prepare_face_model.py` extracts only `det_500m.onnx`,
+`2d106det.onnx`, and `w600k_mbf.onnx` into
+`/opt/render/project/src/.insightface/models/buffalo_s`. The full pack's
+143 MB `1k3d68.onnx` is deliberately skipped because the legacy loader opens
+every ONNX file before filtering. Keep the dashboard `FACE_MODEL_ROOT` at that
+path, `FACE_ORT_THREADS=1`, and `FACE_DET_SIZE=320`. Free instances are
+512 MB / 0.1 CPU: if the `Face model background preload complete` line never
+appears or liveness takes too long, upgrade to Starter (0.5 CPU / 512 MB) or
+Standard (1 CPU / 2 GB) — no code change. Existing templates stay valid only
+when the dashboard `FACE_EMBED_KEY` is the same key used at enrollment;
+otherwise re-enroll. The model pack is non-commercial research only (academic
+prototype).
+
+### 2. Frontend → Vercel
+
+1. Import the repo, set **Root Directory to `frontend/`** (no `vercel.json`
+   needed; defaults build + serve correctly).
+2. Set these **before the first build** (`NEXT_PUBLIC_*` is inlined at build
+   time — changing them later requires a rebuild):
+   `NEXT_PUBLIC_API_URL` (Render backend URL), `NEXT_PUBLIC_USE_MOCKS=false`,
+   `NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME`,
+   `NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET`. Keep
+   `NEXT_PUBLIC_SHOW_DEV_CREDS=false`.
+3. Deploy, then go back and tighten Render's `CORS_ORIGINS`/`FRONTEND_URL`
+   to the Vercel domain.
+
+### Cloudinary account setup
+
+The browser uploads images directly to Cloudinary using an **unsigned upload
+preset**. The backend uses the account API credentials to sign delivery URLs
+and delete rejected uploads. Configure all of these from the same Cloudinary
+account:
+
+| Deployment | Variables |
+|---|---|
+| Render backend | `CLOUDINARY_CLOUD_NAME`, `CLOUDINARY_API_KEY`, `CLOUDINARY_API_SECRET` |
+| Vercel frontend | `NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME`, `NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET` |
+| Local backend | Same three backend variables in `backend/.env` |
+| Local frontend | Same cloud name and preset in `frontend/.env.local` |
+
+Create the preset in Cloudinary Console → **Settings → Upload → Upload
+presets**, and set its signing mode to **Unsigned**. The preset name and cloud
+name are public identifiers; the API secret belongs only in backend settings.
+The two cloud-name values must match exactly. After changing either
+`NEXT_PUBLIC_*` value in Vercel, rebuild/redeploy the frontend because Next.js
+embeds it during the build. Never commit `.env` files or send the API secret in
+chat or source control.
+
+Existing grievance image URLs remain hosted in the old Cloudinary account; a
+new account does not migrate those assets. Keep the old account available if
+those images must remain accessible, or migrate the assets and update their
+stored URLs before closing it.
+
+### 3. Google OAuth console
+
+- Authorized JavaScript origins: the Vercel domain.
+- Authorized redirect URIs:
+  `https://<render-backend>/auth/google/callback` (the backend derives the
+  redirect from the request URL, so no code change is needed).
+
+### 4. Smoke test in production
+
+Citizen register → submit → track; admin login → assign → resolve; Google
+sign-in once. Then Twilio/DLT whenever live SMS is wanted.

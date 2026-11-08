@@ -1,0 +1,149 @@
+"""Pydantic request models.
+
+Field names mirror the JSON keys the frontend sends (and the legacy Flask
+payloads), so no aliasing is needed.
+"""
+
+from __future__ import annotations
+
+from pydantic import BaseModel, Field
+
+
+class SubmitGrievanceRequest(BaseModel):
+    title: str
+    description: str
+    # Ownership always comes from the verified JWT (the router requires auth);
+    # userId is still parsed for backwards-compatible payload shapes but is
+    # never trusted for identity.
+    userId: str | None = None
+    latitude: float | None = None
+    longitude: float | None = None
+    imageUrl: str | None = None
+    imagePublicId: str | None = None
+    address: str | None = None
+
+
+class ValidateImageRequest(BaseModel):
+    imageUrl: str | None = None
+    image_url: str | None = None
+    url: str | None = None
+    public_id: str | None = None
+    public_url: str | None = None
+
+
+class DeleteCloudinaryRequest(BaseModel):
+    public_id: str | None = None
+    public_url: str | None = None
+    resource_type: str = "image"
+
+
+class SignCloudinaryRequest(BaseModel):
+    public_id: str
+    resource_type: str = "image"
+    transform: str = "f_auto,q_auto,w_900"
+
+
+class StatusUpdateRequest(BaseModel):
+    """Officer action — status and/or assignee (PATCH /grievances/{id}/status)."""
+
+    status: str | None = None
+    assignee: str | None = None
+
+
+class HfEngine(BaseModel):
+    category: str
+    priority: str
+    isUrgent: bool = False
+    keywords: list[str] = Field(default_factory=list)
+    explanation: str = ""
+    rawCategoryLabel: str = ""
+    categoryConfidence: float = 0.0
+    urgentMatches: list[str] = Field(default_factory=list)
+    modelInfo: dict = Field(default_factory=dict)
+
+class StateTransitionRequest(BaseModel):
+    to_state: str
+    reason: str
+
+class AssignRequest(BaseModel):
+    departmentId: str
+    ownerId: str | None = None
+    dueDate: str | None = None
+    reason: str = Field(min_length=1)
+    overrideAi: bool = False
+
+class ReassignRequest(BaseModel):
+    ownerId: str
+    departmentId: str | None = None
+    reason: str = Field(min_length=1)
+
+class ProgressUpdateRequest(BaseModel):
+    bodyInternal: str
+    bodyCustomer: str | None = None
+    visibility: str = "internal"
+    kind: str = "note"
+    etaClass: str | None = None
+    workCompleted: str | None = None
+    currentSituation: str | None = None
+    nextAction: str | None = None
+    attachmentUrl: str | None = None
+
+class PriorityUpdateRequest(BaseModel):
+    priority: str
+    reason: str
+
+class DeadlineUpdateRequest(BaseModel):
+    dueDate: str
+    reason: str
+
+class EscalationRequest(BaseModel):
+    reason: str
+    targetDept: str | None = None
+    issueType: str | None = None
+    description: str | None = None
+    suggestedAction: str | None = None
+    evidenceUrl: str | None = None
+
+class ResolutionRequest(BaseModel):
+    text: str
+    actions: list[str] = Field(default_factory=list)
+    completionPhotoUrl: str | None = None
+    supportingDocumentUrl: str | None = None
+
+class CloseRequest(BaseModel):
+    reason: str
+
+class WithdrawRequest(BaseModel):
+    reason: str
+
+class ReopenRequest(BaseModel):
+    reason: str = Field(min_length=10, max_length=2000)
+
+class ResolutionFeedbackRequest(BaseModel):
+    rating: int = Field(ge=1, le=5)
+    comment: str = Field(min_length=3, max_length=2000)
+    is_satisfied: bool
+
+class RejectRequest(BaseModel):
+    reason: str
+
+class ReturnResolutionRequest(BaseModel):
+    reason: str
+
+class VoiceIntakeDraft(BaseModel):
+    """Advisory snapshot of the current draft (context for the extraction)."""
+
+    title: str | None = None
+    description: str | None = None
+
+class VoiceIntakeRequest(BaseModel):
+    """POST /grievance-intake/extract — conversational intake extraction.
+
+    Deep validation (utterance caps, language whitelist) lives in
+    services/grievance_intake.py so every rejection is a uniform 400.
+    """
+
+    utterances: list[str] = Field(default_factory=list)
+    language: str = "en-IN"
+    draft: VoiceIntakeDraft | None = None
+    asked_questions: list[str] = Field(default_factory=list)
