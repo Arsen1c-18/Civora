@@ -91,3 +91,6 @@ results/ml_benchmarks/embedding_cache.npz
 # Secrets
 serviceAccountKey.json
 backend/serviceAccountKey.json
+
+# Project memory / dev session notes stay local, never published
+memory/
