@@ -1,8 +1,8 @@
-# SAMARTH
+# CIVORA
 
-**System for Accessible Management, Action, Resolution and Tracking of Hearings**
+**AI-Powered Grievance Redressal & Management Platform** — Every grievance deserves a resolution.
 
-SAMARTH is a B.Tech academic research prototype for managing civic grievances.
+CIVORA is a B.Tech academic research prototype for managing civic grievances.
 It combines a citizen-facing complaint portal with role-based staff workflows,
 department analytics, and experimental AI-assisted triage. It is a prototype,
 not an official government service or a national grievance platform.
@@ -10,6 +10,16 @@ not an official government service or a national grievance platform.
 AI outputs are advisory. Authorized people make the final decisions about
 department routing, employee assignment, escalation, resolution approval, and
 closure.
+
+## Optional Gnani speech support
+
+The existing voice-assisted draft flow can use Gnani Prisma for explicit,
+short recording transcription. Citizens review the transcript before sending
+it through the normal grievance submission path. Optional Gnani Timbre audio
+plays only when a citizen presses a speaker control; text remains available
+if speech services are disabled. Configure backend-only `GNANI_API_KEY` and
+feature flags as documented in [docs/VOICE_ASSISTED_COMPLAINT.md](docs/VOICE_ASSISTED_COMPLAINT.md).
+Evon is not currently integrated.
 
 ## What the system supports
 
@@ -55,7 +65,7 @@ employees autonomously.
 | Authentication | JWT sessions and server-side role checks; Google OAuth is optional |
 | Mapping and charts | Leaflet and Recharts |
 | AI and text analysis | Local scikit-learn classification and keyword rules; optional Hugging Face and Groq provider fallbacks |
-| Optional services | Cloudinary uploads, Sarvam speech-to-text, face authentication, and Twilio SMS |
+| Optional services | Cloudinary uploads, Gnani Prisma/Timbre speech, face authentication, and Twilio SMS |
 
 The frontend calls the FastAPI REST API. AI and classification services run
 inside the backend; there is no separate AI microservice.
@@ -66,7 +76,7 @@ flowchart LR
     Web -->|REST and JWT| API[FastAPI backend]
     API --> Store[(MongoDB or in-memory store)]
     API --> NLP[Local classification and rules]
-    API -. optional .-> Providers[Groq, Hugging Face, Sarvam, Cloudinary]
+    API -. optional .-> Providers[Groq, Hugging Face, Gnani Prisma and Timbre, Cloudinary]
 ```
 
 ## Repository map
@@ -260,7 +270,8 @@ in `backend/.env` only when testing the corresponding feature:
 | `HF_API_TOKEN` | Optional Hugging Face classification fallback | Not required for startup |
 | `CLOUDINARY_CLOUD_NAME`, `CLOUDINARY_API_KEY`, `CLOUDINARY_API_SECRET` | Backend Cloudinary account for signed URLs and asset deletion | Set on backend only; API secret must remain private |
 | `NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME`, `NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET` | Frontend direct image uploads | Must use the same cloud name; preset must be unsigned |
-| `TRANSCRIPTION_ENABLED`, `SARVAM_API_KEY` | Voice transcription | Disabled by default; requires explicit provider configuration |
+| `GNANI_API_KEY`, `GNANI_PRISMA_ENABLED` | Gnani Prisma voice transcription | Disabled by default; authenticated draft transcription, WAV only in current UI |
+| `GNANI_API_KEY`, `GNANI_TIMBRE_ENABLED` | Gnani Timbre spoken output | Disabled by default; speaker buttons only, gracefully falls back to text |
 | `FACE_AUTH_ENABLED`, `FACE_EMBED_KEY` | Optional face sign-in | Disabled by default; also requires `backend/requirements-face.txt` and model setup |
 | `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET` | Google OAuth | Google sign-in is unavailable until configured |
 | `SMS_PROVIDER` and `TWILIO_*` | SMS notifications | Dry-run/off unless configured |
