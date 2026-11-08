@@ -22,11 +22,13 @@ let apiScript;
 const apiCalls = { transcribe: [], extract: [], submit: [] };
 const captures = [];
 const speechCalls = [];
+const timbreCalls = [];
 
 const mockApi = {
   transcribeAudio: (...args) => { apiCalls.transcribe.push(args); return apiScript.transcribe(...args); },
   extractVoiceIntake: (...args) => { apiCalls.extract.push(args); return apiScript.extract(...args); },
   submitGrievance: (...args) => { apiCalls.submit.push(args); return apiScript.submit(...args); },
+  synthesizeSpeech: async (...args) => { timbreCalls.push(args); return new Blob(["mock wav"], { type: "audio/wav" }); },
   getGrievanceHistory: async () => [],
 };
 
@@ -113,6 +115,7 @@ beforeEach(() => {
   apiCalls.submit.length = 0;
   captures.length = 0;
   speechCalls.length = 0;
+  timbreCalls.length = 0;
   customPlay = null;
   scrollCalls = 0;
   window.localStorage.clear();
@@ -124,6 +127,31 @@ beforeEach(() => {
   container = document.createElement("div");
   document.body.append(container);
   root = createRoot(container);
+});
+
+test("voice language selector stays English, Hindi and Marathi; Timbre runs only on the transcript button", async () => {
+  const OriginalAudio = global.Audio;
+  const played = [];
+  global.Audio = class {
+    constructor(url) { this.url = url; }
+    async play() { played.push(this.url); }
+    pause() {}
+  };
+  try {
+    await mount();
+    await click("Tell us your problem");
+    const selector = container.querySelector("#intake-language");
+    assert.deepEqual([...selector.options].map((option) => option.value), ["en-IN", "hi-IN", "mr-IN"]);
+    assert.equal(timbreCalls.length, 0, "rendering the voice form does not request generated audio");
+    await click("Start speaking");
+    await click("Stop recording");
+    await click("Listen to transcript");
+    assert.equal(timbreCalls.length, 1);
+    assert.equal(timbreCalls[0][1], "en-IN");
+    assert.equal(played.length, 1);
+  } finally {
+    global.Audio = OriginalAudio;
+  }
 });
 
 afterEach(async () => {
@@ -552,6 +580,29 @@ test("citizen detail modal never shows AI classification, confidence or departme
   assert.doesNotMatch(container.textContent, /AI Suggestion|Automated Triage Diagnostic/);
   assert.doesNotMatch(container.textContent, /AI is \d+% sure/);
   assert.doesNotMatch(container.textContent, /electricity/i, "classified department/category is hidden");
+});
+
+test("citizen tracking requests Timbre only after a status speaker control is pressed", async () => {
+  const OriginalAudio = global.Audio;
+  const played = [];
+  global.Audio = class {
+    constructor(url) { this.url = url; }
+    async play() { played.push(this.url); }
+    pause() {}
+  };
+  try {
+    await renderModal({ grievance: citizenGrievance, onClose: () => {}, citizenView: true });
+    assert.ok(button("Listen to status"));
+    assert.ok(button("Listen to grievance"));
+    assert.equal(timbreCalls.length, 0, "opening tracking detail never triggers TTS");
+    await click("Listen to status");
+    assert.equal(timbreCalls.length, 1);
+    assert.match(timbreCalls[0][0], /currently open/);
+    assert.equal(timbreCalls[0][1], "en-IN");
+    assert.equal(played.length, 1);
+  } finally {
+    global.Audio = OriginalAudio;
+  }
 });
 
 test("staff detail modal keeps the triage diagnostic but never the confidence pill (DEC-044)", async () => {

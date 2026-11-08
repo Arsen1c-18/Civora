@@ -117,9 +117,10 @@ export interface SubmitResult {
 }
 
 export type VoiceLanguage = "en-IN" | "hi-IN" | "mr-IN";
+export type PrismaLanguage = VoiceLanguage | "bn-IN" | "gu-IN" | "kn-IN" | "ml-IN" | "pa-IN" | "ta-IN" | "te-IN";
 export interface TranscriptionResult {
   transcript: string;
-  language_code: VoiceLanguage | null;
+  language_code: PrismaLanguage | null;
   request_id?: string;
 }
 

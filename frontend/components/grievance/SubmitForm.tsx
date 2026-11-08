@@ -19,6 +19,7 @@ import { useI18n } from "@/lib/i18n";
 import { useToast } from "@/components/ui/ToastProvider";
 import { AlertTriangle, Volume2 } from "lucide-react";
 import { speakWarning } from "@/lib/voice/speakWarning";
+import { SpeakButton } from "./SpeakButton";
 
 const makeSchema = (t: ReturnType<typeof useI18n>["t"]) =>
   z.object({
@@ -208,7 +209,7 @@ export function SubmitForm() {
                       aria-labelledby="intake-photo-title"
                       className={`space-y-3 rounded-md border p-4 sm:p-3 transition ${
                         !photoSkipped && !image
-                          ? "border-orange-200 bg-orange-50/40 ring-1 ring-orange-200"
+                          ? "border-teal-200 bg-teal-50/40 ring-1 ring-teal-200"
                           : "border-ink-100 bg-white"
                       }`}
                     >
@@ -367,6 +368,7 @@ export function SubmitForm() {
                 </p>
               </div>
               <Alert tone="info">{result.message}</Alert>
+              <SpeakButton text={`Your grievance has been submitted. Reference number ${result.grievanceId}. ${result.message}`} language={({ en: "en-IN", hi: "hi-IN", mr: "mr-IN" } as Record<string, string>)[language] ?? "en-IN"} label={t("speechListenConfirmation")} />
             </CardBody>
           </Card>
         )}
@@ -381,7 +383,7 @@ function AiSuggestionBadge({ visible }: { visible: boolean }) {
   const { t } = useI18n();
   if (!visible) return null;
   return (
-    <span className="mt-1 inline-flex items-center rounded-full bg-orange-100 px-2 py-0.5 text-[10px] font-medium text-orange-700">
+    <span className="mt-1 inline-flex items-center rounded-full bg-teal-50 px-2 py-0.5 text-[10px] font-medium text-teal-800 border border-teal-200">
       {t("intakeSuggestedBadge")}
     </span>
   );

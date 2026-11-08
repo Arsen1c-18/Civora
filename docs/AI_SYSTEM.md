@@ -2,18 +2,21 @@
 
 > Every AI capability is documented separately.
 > Status: The module specifications below include PLANNED designs. Stage 4B
-> adds an IMPLEMENTED speech-to-text backend; see the feature note below.
+> adds speech technology integration; see the feature note below.
 > Do not claim an LLM call automatically constitutes a validated AI module.
 
 ---
 
 ## Design Principles
 
-Stage 4B speech-to-text is an IMPLEMENTED draft-assistance backend (mock testing
-recorded in memory/CHANGELOG.md), not a validated recognition model. It returns
-original-language text for citizen review, creates no grievance and stores no
-AI output in MongoDB. Stage 5 frontend is IMPLEMENTED and mock TESTED; real
-speech accuracy remains unvalidated. See [VOICE_ASSISTED_COMPLAINT.md](VOICE_ASSISTED_COMPLAINT.md).
+Gnani Prisma v3.0 is the speech-to-text provider for explicitly submitted voice
+recordings. Transcripts remain drafts until reviewed and confirmed in the
+existing citizen workflow. Gnani Timbre synthesis runs only after a user presses
+a speaker control; failure does not block text workflows. Provider integration
+is mock-tested, but live credentials, model quality and language-specific
+accuracy remain unvalidated. Evon is not integrated; it is an optional future
+extension because API access and an evaluation case have not been established.
+See [VOICE_ASSISTED_COMPLAINT.md](VOICE_ASSISTED_COMPLAINT.md).
 
 1. AI is a **decision-support layer**, not a final authority.
 2. Every AI output includes: module ID, model/version, confidence score (where available), timestamp.

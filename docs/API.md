@@ -12,9 +12,12 @@
 
 ## Base URL
 
-Stage 4B adds authenticated multipart `POST /transcribe` (disabled by default),
-returning original-language text without creating a grievance. Audio contract,
-idempotency, quotas and errors: [Voice-assisted complaints](VOICE_ASSISTED_COMPLAINT.md).
+Authenticated multipart `POST /transcribe` calls Gnani Prisma when
+`GNANI_PRISMA_ENABLED=true`; it returns original-language text without creating
+a grievance. Authenticated JSON `POST /speech/synthesize` returns Timbre WAV
+audio only when explicitly requested and `GNANI_TIMBRE_ENABLED=true`. Audio
+contract, idempotency, limits and errors:
+[Voice-assisted complaints](VOICE_ASSISTED_COMPLAINT.md).
 
 DEC-038 (Stage 12) adds authenticated JSON `POST /grievance-intake/extract`:
 what the citizen said so far (transcripts and/or typed answers) becomes
@@ -36,6 +39,8 @@ Development: `http://localhost:10000`
 | `GET` | `/health` | Returns `{ "status", "storage" }` — `storage` is `mongodb` or `in-memory` |
 | `GET` | `/test` | Legacy smoke-test route |
 | `POST` | `/submit-grievance` | **Authenticated users only.** Creates a grievance using the verified JWT owner; runs the AI classifier cascade. Returns `{ "message", "grievanceId", "hfEngine" }` |
+| `POST` | `/transcribe` | Authenticated multipart audio draft transcription via Gnani Prisma when enabled; no grievance or database mutation |
+| `POST` | `/speech/synthesize` | Authenticated, explicit Timbre WAV generation when enabled; returns `audio/wav`; repeated identical requests are process-cache hits |
 | `GET` | `/grievances` | Authenticated list; citizens/resolvers are token-scoped, staff see authorized scope; optional `?limit=` (default `50`, must be `1..1000`) |
 | `GET` | `/resolver/tasks` | Authenticated resolver's assigned work, strictly scoped by token owner ID and independent of department aliases |
 | `GET` | `/grievances/department-counts` | Aggregate totals by category; no individual grievance data is returned |

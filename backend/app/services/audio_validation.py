@@ -8,7 +8,7 @@ from fastapi import HTTPException
 
 
 def validate_wav(data: bytes, max_seconds: float = 30) -> bytes:
-    """Validate actual RIFF chunks and frames, then strip metadata for Sarvam.
+    """Validate actual RIFF chunks and frames, then strip metadata before upload.
 
     The caller caps bytes before entering here. RIFF lengths are untrusted:
     checking every chunk prevents wave.readframes() accepting truncated files.

@@ -11,7 +11,7 @@ from starlette.datastructures import UploadFile
 
 from .. import config
 from ..auth import get_current_user
-from ..services import sarvam
+from ..services import speech
 from ..services.audio_validation import validate_wav
 from ..services.transcription_limits import transcription_limits
 
@@ -24,7 +24,7 @@ router = APIRouter(tags=["transcription"])
         "additionalProperties": False,
         "properties": {
             "file": {"type": "string", "format": "binary", "description": "Mono 16-bit 16 kHz PCM WAV, at most 30 seconds/1 MiB"},
-            "language_code": {"type": "string", "enum": ["en-IN", "hi-IN", "mr-IN"]},
+            "language_code": {"type": "string", "enum": sorted(speech.STT_LANGUAGES)},
         },
     }}}},
     "parameters": [{"name": "Idempotency-Key", "in": "header", "required": False,
@@ -36,14 +36,14 @@ async def transcribe(
 ):
     if not config.TRANSCRIPTION_ENABLED:
         raise HTTPException(503, "Transcription is disabled")
-    if not config.SARVAM_API_KEY or config.SARVAM_STT_MODEL != "saaras:v4":
+    if not config.GNANI_API_KEY:
         raise HTTPException(503, "Transcription is not configured")
     settings = (
         config.TRANSCRIPTION_MAX_FILE_BYTES, config.TRANSCRIPTION_MAX_REQUEST_BYTES,
         config.TRANSCRIPTION_MAX_SECONDS, config.TRANSCRIPTION_USER_MINUTE_LIMIT,
         config.TRANSCRIPTION_USER_HOUR_LIMIT, config.TRANSCRIPTION_GLOBAL_ATTEMPT_LIMIT,
         config.TRANSCRIPTION_MAX_CONCURRENT, config.TRANSCRIPTION_IDEMPOTENCY_TTL_SECONDS,
-        config.TRANSCRIPTION_UPLOAD_TIMEOUT_SECONDS, config.SARVAM_TIMEOUT_SECONDS,
+        config.TRANSCRIPTION_UPLOAD_TIMEOUT_SECONDS, config.GNANI_TIMEOUT_SECONDS,
     )
     if any(not math.isfinite(value) or value <= 0 for value in settings):
         raise HTTPException(503, "Invalid transcription configuration")
@@ -61,8 +61,8 @@ async def transcribe(
             raise HTTPException(400, "Exactly one file and language_code are required")
         upload = form["file"]
         language = form["language_code"]
-        if not isinstance(upload, UploadFile) or not isinstance(language, str) or language not in sarvam.LANGUAGES:
-            raise HTTPException(400, "WAV file and language_code (en-IN, hi-IN, mr-IN) are required")
+        if not isinstance(upload, UploadFile) or not isinstance(language, str) or language not in speech.STT_LANGUAGES:
+            raise HTTPException(400, "WAV file and a supported language_code are required")
         cap = min(config.TRANSCRIPTION_MAX_FILE_BYTES, 1024 * 1024)
         data = await upload.read(cap + 1)
         if len(data) > cap:
@@ -77,7 +77,7 @@ async def transcribe(
             return cached
         result = None
         try:
-            result = await sarvam.transcribe(audio, language)
+            result = await speech.transcribe(audio, language)
             return result
         finally:
             transcription_limits.finish(user, key, result)

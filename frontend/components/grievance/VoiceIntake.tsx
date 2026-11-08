@@ -15,6 +15,7 @@
 import { useCallback, useEffect, useReducer, useRef, useState } from "react";
 import { LoaderCircle, Mic, RotateCcw, Send, SkipForward, Square, Volume2, VolumeX } from "lucide-react";
 import { Button } from "@/components/ui/Button";
+import { SpeakButton } from "./SpeakButton";
 import { Select, Textarea } from "@/components/ui/Field";
 import { useI18n, type MessageKey } from "@/lib/i18n";
 import { voiceEn, voiceHi, voiceMr } from "@/lib/i18n/voice";
@@ -94,7 +95,9 @@ function questionText(kind: IntakeQuestionKind, language: VoiceLanguage): string
 export function useVoiceIntake(options: VoiceIntakeOptions): VoiceIntakeController {
   const { language: interfaceLanguage } = useI18n();
   const [state, dispatch] = useReducer(intakeReducer, initialIntakeState);
-  const [language, setLanguage] = useState<VoiceLanguage>(() => `${interfaceLanguage}-IN` as VoiceLanguage);
+  const [language, setLanguage] = useState<VoiceLanguage>(() =>
+    interfaceLanguage === "hi" ? "hi-IN" : interfaceLanguage === "mr" ? "mr-IN" : "en-IN",
+  );
   const [seconds, setSeconds] = useState(0);
   const [level, setLevel] = useState(0);
   const [ai, setAi] = useState({ title: false, description: false });
@@ -520,15 +523,15 @@ export function VoiceIntake({ intake, disabled, onSwitchManual }: {
             {LEVEL_THRESHOLDS.map((threshold, index) => (
               <span
                 key={threshold}
-                className={`w-1.5 rounded-sm ${intake.level >= threshold ? "bg-orange-500" : "bg-ink-200"}`}
+                className={`w-1.5 rounded-sm ${intake.level >= threshold ? "bg-teal-500" : "bg-ink-200"}`}
                 style={{ height: `${6 + index * 4}px` }}
               />
             ))}
           </span>
         ) : state.phase === "prompting" ? (
-          <Volume2 size={16} className="animate-pulse text-orange-500" aria-hidden="true" />
+          <Volume2 size={16} className="animate-pulse text-teal-600" aria-hidden="true" />
         ) : busyPhase ? (
-          <LoaderCircle size={16} className="animate-spin text-orange-500" aria-hidden="true" />
+          <LoaderCircle size={16} className="animate-spin text-teal-600" aria-hidden="true" />
         ) : (
           <Mic size={16} className="text-ink-400" aria-hidden="true" />
         )}
@@ -559,13 +562,14 @@ export function VoiceIntake({ intake, disabled, onSwitchManual }: {
               >
                 {message.text}
               </p>
+              {message.role === "user" && <div className="mt-1"><SpeakButton text={message.text} language={intake.language} label={t("speechListenTranscript")} /></div>}
             </div>
           ))}
         </div>
       )}
 
       {answering && state.pending && (
-        <div className="space-y-2 rounded-md border border-orange-200 bg-orange-50/60 p-2.5 sm:p-3">
+        <div className="space-y-2 rounded-md border border-teal-200 bg-teal-50/60 p-2.5 sm:p-3">
           <div className="flex flex-wrap items-start justify-between gap-2">
             <p className="text-xs sm:text-sm font-medium text-ink-900">{questionText(state.pending.kind, intake.language)}</p>
             <Button type="button" variant="ghost" size="sm" onClick={intake.replay} disabled={disabled}>
@@ -588,13 +592,13 @@ export function VoiceIntake({ intake, disabled, onSwitchManual }: {
           )}
           <div className="flex flex-wrap items-center justify-center sm:justify-start gap-2">
             {state.phase === "listening" ? (
-              <Button type="button" variant="orange" size="sm" onClick={intake.actions.stop} disabled={disabled}>
+              <Button type="button" variant="primary" size="sm" onClick={intake.actions.stop} disabled={disabled}>
                 <Square size={14} aria-hidden="true" />{t("voiceStop")}
               </Button>
             ) : (
               <Button
                 type="button"
-                variant="orange"
+                variant="primary"
                 size="sm"
                 onClick={intake.actions.start}
                 disabled={disabled || !supported || state.phase === "prompting"}
@@ -719,7 +723,7 @@ export function IntakeModeToggle({ value, onChange, disabled = false }: {
             className={`rounded-lg border p-3 sm:p-4 text-left transition ${
               selected
                 ? option.mode === "voice"
-                  ? "border-orange-400 bg-orange-50/70 ring-1 ring-orange-300"
+                  ? "border-teal-500 bg-teal-50/70 ring-1 ring-teal-300"
                   : "border-ink-400 bg-ink-50 ring-1 ring-ink-300"
                 : "border-ink-200 bg-white hover:border-ink-300"
             }`}
@@ -729,7 +733,7 @@ export function IntakeModeToggle({ value, onChange, disabled = false }: {
               <span
                 aria-hidden="true"
                 className={`mt-0.5 sm:mt-0 inline-block h-3 w-3 shrink-0 rounded-full border ${
-                  selected ? "border-orange-500 bg-orange-500" : "border-ink-300 bg-white"
+                  selected ? "border-teal-600 bg-teal-600" : "border-ink-300 bg-white"
                 }`}
               />
             </span>

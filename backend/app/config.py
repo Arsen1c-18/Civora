@@ -153,11 +153,16 @@ DLT_ENTITY_ID = os.getenv("DLT_ENTITY_ID", "")
 DLT_TEMPLATE_ID_STAGE = os.getenv("DLT_TEMPLATE_ID_STAGE", "")
 DLT_TEMPLATE_ID_OTP = os.getenv("DLT_TEMPLATE_ID_OTP", "")
 
-# --- Voice-assisted complaints (DEC-032) -------------------------------------
-# Off until explicitly enabled by operator.
-SARVAM_API_KEY = os.getenv("SARVAM_API_KEY", "")
-SARVAM_STT_MODEL = os.getenv("SARVAM_STT_MODEL", "saaras:v4")
-TRANSCRIPTION_ENABLED = os.getenv("TRANSCRIPTION_ENABLED", "false").lower() == "true"
+# --- Gnani speech (Prisma STT / Timbre TTS) -----------------------------------
+GNANI_API_KEY = os.getenv("GNANI_API_KEY", "")
+GNANI_PRISMA_ENDPOINT = os.getenv("GNANI_PRISMA_ENDPOINT", "https://api.vachana.ai/stt/v3")
+GNANI_TIMBRE_ENDPOINT = os.getenv("GNANI_TIMBRE_ENDPOINT", "https://api.vachana.ai/api/v1/tts/inference")
+GNANI_PRISMA_MODEL = os.getenv("GNANI_PRISMA_MODEL", "prisma-v3.0")
+GNANI_TIMBRE_MODEL = os.getenv("GNANI_TIMBRE_MODEL", "timbre-v2.5")
+TRANSCRIPTION_ENABLED = os.getenv("GNANI_PRISMA_ENABLED", "false").lower() == "true"
+GNANI_TIMBRE_ENABLED = os.getenv("GNANI_TIMBRE_ENABLED", "false").lower() == "true"
+GNANI_TIMEOUT_SECONDS = float(os.getenv("GNANI_TIMEOUT_SECONDS", "45"))
+GNANI_TTS_MAX_CHARACTERS = int(os.getenv("GNANI_TTS_MAX_CHARACTERS", "1200"))
 TRANSCRIPTION_MAX_FILE_BYTES = int(os.getenv("TRANSCRIPTION_MAX_FILE_BYTES", "1048576"))
 TRANSCRIPTION_MAX_REQUEST_BYTES = int(os.getenv("TRANSCRIPTION_MAX_REQUEST_BYTES", "2097152"))
 TRANSCRIPTION_MAX_SECONDS = float(os.getenv("TRANSCRIPTION_MAX_SECONDS", "30"))
@@ -167,7 +172,6 @@ TRANSCRIPTION_GLOBAL_ATTEMPT_LIMIT = int(os.getenv("TRANSCRIPTION_GLOBAL_ATTEMPT
 TRANSCRIPTION_MAX_CONCURRENT = int(os.getenv("TRANSCRIPTION_MAX_CONCURRENT", "2"))
 TRANSCRIPTION_IDEMPOTENCY_TTL_SECONDS = int(os.getenv("TRANSCRIPTION_IDEMPOTENCY_TTL_SECONDS", "300"))
 TRANSCRIPTION_UPLOAD_TIMEOUT_SECONDS = float(os.getenv("TRANSCRIPTION_UPLOAD_TIMEOUT_SECONDS", "15"))
-SARVAM_TIMEOUT_SECONDS = float(os.getenv("SARVAM_TIMEOUT_SECONDS", "45"))
 
 # --- Proxy -------------------------------------------------------------------
 # When true, honour X-Forwarded-Proto when deciding whether a request is HTTPS.

@@ -276,6 +276,11 @@ GROQ_API_KEY=
 GROQ_MODEL=llama-3.3-70b-versatile
 HF_API_TOKEN=
 
+# Optional Gnani speech (backend only; disabled until explicitly enabled)
+GNANI_API_KEY=
+GNANI_PRISMA_ENABLED=false
+GNANI_TIMBRE_ENABLED=false
+
 # CORS
 CORS_ORIGINS=http://localhost:3000
 
@@ -290,6 +295,10 @@ FACE_AUTH_ENABLED=false
 # FACE_SMILE_MOUTH_WIDEN, FACE_MIN_BLUR_VARIANCE, FACE_MIN_FACE_PX) are
 # documented in .env.example
 ```
+
+Prisma/Timbre endpoints, model selection, timeout and bounded usage settings
+are listed in `backend/.env.example`. Runtime audio remains WAV-only in the
+current capture interface; real-provider calls require operator credentials.
 
 > JWT auth (DEC-017) reads `JWT_SECRET_KEY`, `ACCESS_TOKEN_EXPIRE_MINUTES`,
 > `REFRESH_TOKEN_EXPIRE_DAYS` and the seed/Google OAuth vars from

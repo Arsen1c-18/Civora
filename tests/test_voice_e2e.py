@@ -1,4 +1,4 @@
-"""Loopback HTTP: actual React/API/WAV path -> actual app -> mocked provider.
+"""Loopback HTTP: actual React/API/WAV path -> actual app -> mocked Gnani provider.
 
 Opt-in only: this starts an in-process uvicorn server and a Node/jsdom/React
 subprocess, which is too heavy for constrained dev machines. Run it with
@@ -43,7 +43,7 @@ def test_mocked_voice_end_to_end(app, monkeypatch):
     from backend.app import config, db
     from backend.app.auth import create_access_token
     from backend.app.routers import transcription
-    from backend.app.services import sarvam
+    from backend.app.services import speech
     from backend.app.services.transcription_limits import TranscriptionLimits
 
     state = {"scenario": "success", "posts": 0, "options": 0, "provider": 0, "extractions": 0}
@@ -53,23 +53,23 @@ def test_mocked_voice_end_to_end(app, monkeypatch):
         "hi-IN": "पानी की आपूर्ति कल से बंद है। कृपया सहायता करें।",
         "mr-IN": "कालपासून पाणीपुरवठा बंद आहे. कृपया मदत करा.",
     }
-    monkeypatch.setattr(config, "SARVAM_API_KEY", "mock-only")
-    monkeypatch.setattr(config, "SARVAM_STT_MODEL", "saaras:v4")
+    monkeypatch.setattr(config, "GNANI_API_KEY", "mock-only")
+    monkeypatch.setattr(config, "GNANI_PRISMA_MODEL", "prisma-v3.0")
     monkeypatch.setattr(config, "TRANSCRIPTION_ENABLED", True)
 
     def provider(request):
         # Inspect the actual validated WAV forwarded by the production service.
         state["provider"] += 1
-        assert str(request.url) == sarvam.SARVAM_STT_URL
-        assert request.headers["api-subscription-key"] == "mock-only"
+        assert str(request.url) == speech.STT_ENDPOINT
+        assert request.headers["X-API-Key-ID"] == "mock-only"
         message = BytesParser(policy=default).parsebytes(
             b"Content-Type: " + request.headers["content-type"].encode() + b"\r\n\r\n" + request.content
         )
         parts = {part.get_param("name", header="content-disposition"): part.get_payload(decode=True)
                  for part in message.iter_parts()}
-        assert parts["model"] == b"saaras:v4" and parts["mode"] == b"transcribe"
+        assert parts["model"] == b"prisma-v3.0"
         language = parts["language_code"].decode()
-        with wave.open(io.BytesIO(parts["file"]), "rb") as wav:
+        with wave.open(io.BytesIO(parts["audio_file"]), "rb") as wav:
             assert (wav.getnchannels(), wav.getsampwidth(), wav.getframerate()) == (1, 2, 16000)
             assert wav.getnframes() == 1600
             assert any(wav.readframes(1600)), "Actual processor must generate nonzero PCM"
@@ -81,7 +81,7 @@ def test_mocked_voice_end_to_end(app, monkeypatch):
             return httpx.Response(200, json={"transcript": None})
         return httpx.Response(200, json={"transcript": transcripts[language], "language_code": language, "request_id": "stage6-mock"})
 
-    monkeypatch.setattr(sarvam, "make_client", lambda: httpx.AsyncClient(transport=httpx.MockTransport(provider)))
+    monkeypatch.setattr(speech, "make_client", lambda: httpx.AsyncClient(transport=httpx.MockTransport(provider)))
     original_close = UploadFile.close
 
     async def close(upload):

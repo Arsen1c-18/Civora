@@ -1,4 +1,4 @@
-"""Real app integration with mock-only Sarvam transport; no paid calls."""
+"""Real app integration with mock-only Gnani transport; no paid calls."""
 
 import asyncio
 import io
@@ -10,7 +10,7 @@ import pytest
 from backend.app import config
 from backend.app.auth import create_access_token
 from backend.app.routers import transcription as route
-from backend.app.services import sarvam
+from backend.app.services import speech
 from backend.app.services.transcription_limits import TranscriptionLimits
 from backend.app.transcription_guard import TranscriptionGuard
 
@@ -24,11 +24,11 @@ def wav_bytes(frames=160):
 
 
 @pytest.fixture(autouse=True)
-def mock_sarvam(monkeypatch):
+def mock_gnani(monkeypatch):
     monkeypatch.setattr(config, "TRANSCRIPTION_ENABLED", True)
     # Synthetic placeholder, never read the operator's key into fixtures.
-    monkeypatch.setattr(config, "SARVAM_API_KEY", "mock-only")
-    monkeypatch.setattr(config, "SARVAM_STT_MODEL", "saaras:v4")
+    monkeypatch.setattr(config, "GNANI_API_KEY", "mock-only")
+    monkeypatch.setattr(config, "GNANI_PRISMA_MODEL", "prisma-v3.0")
     monkeypatch.setattr(route, "transcription_limits", TranscriptionLimits())
     calls = []
     state = {"body": {"transcript": "A water supply complaint", "language_code": "en-IN", "request_id": "mock-id"}, "status": 200}
@@ -44,7 +44,7 @@ def mock_sarvam(monkeypatch):
         client = httpx.AsyncClient(transport=httpx.MockTransport(handler))
         clients.append(client)
         return client
-    monkeypatch.setattr(sarvam, "make_client", make_client)
+    monkeypatch.setattr(speech, "make_client", make_client)
     return state, calls, clients
 
 
@@ -62,7 +62,7 @@ def upload(client, audio=None, language="en-IN", auth=None):
 
 
 @pytest.mark.parametrize("enabled", [True, False])
-def test_voice_cors_preflight(client, mock_sarvam, monkeypatch, enabled):
+def test_voice_cors_preflight(client, mock_gnani, monkeypatch, enabled):
     monkeypatch.setattr(config, "TRANSCRIPTION_ENABLED", enabled)
     response = client.options("/transcribe", headers={
         "Origin": "http://localhost:3000", "Access-Control-Request-Method": "POST",
@@ -72,21 +72,21 @@ def test_voice_cors_preflight(client, mock_sarvam, monkeypatch, enabled):
     assert response.headers["access-control-allow-origin"] == "http://localhost:3000"
     assert "POST" in response.headers["access-control-allow-methods"]
     assert "authorization" in response.headers["access-control-allow-headers"].lower()
-    assert not mock_sarvam[1]
+    assert not mock_gnani[1]
 
 
-def test_voice_cors_rejects_unlisted_preflight(client, mock_sarvam):
+def test_voice_cors_rejects_unlisted_preflight(client, mock_gnani):
     response = client.options("/transcribe", headers={
         "Origin": "http://unlisted.invalid", "Access-Control-Request-Method": "POST",
         "Access-Control-Request-Headers": "authorization,idempotency-key",
     })
     assert response.status_code == 400
     assert "access-control-allow-origin" not in response.headers
-    assert not mock_sarvam[1]
+    assert not mock_gnani[1]
 
 
 @pytest.mark.parametrize("case,status", [("success", 200), ("disabled", 503), ("auth", 401), ("invalid", 415), ("oversize", 413)])
-def test_voice_cors_headers_on_success_and_errors(client, mock_sarvam, monkeypatch, case, status):
+def test_voice_cors_headers_on_success_and_errors(client, mock_gnani, monkeypatch, case, status):
     monkeypatch.setattr(config, "TRANSCRIPTION_ENABLED", case != "disabled")
     auth = {"Origin": "http://localhost:3000"}
     if case != "auth":
@@ -96,67 +96,73 @@ def test_voice_cors_headers_on_success_and_errors(client, mock_sarvam, monkeypat
     assert response.status_code == status
     assert response.headers["access-control-allow-origin"] == "http://localhost:3000"
     assert "origin" in response.headers["vary"].lower()
-    assert len(mock_sarvam[1]) == (1 if case == "success" else 0)
+    assert len(mock_gnani[1]) == (1 if case == "success" else 0)
 
 
-@pytest.mark.parametrize("language,text", [("en-IN", "There is no water supply."), ("hi-IN", "पानी की आपूर्ति बंद है।"), ("mr-IN", "पाणीपुरवठा बंद आहे.")])
-def test_transcript_preserved(client, mock_sarvam, language, text, caplog):
-    state, calls, clients = mock_sarvam
+@pytest.mark.parametrize("language,text", [
+    ("en-IN", "There is no water supply."), ("hi-IN", "पानी की आपूर्ति बंद है।"),
+    ("mr-IN", "पाणीपुरवठा बंद आहे."), ("bn-IN", "জলের সরবরাহ বন্ধ।"),
+    ("gu-IN", "પાણીનો પુરવઠો બંધ છે."), ("kn-IN", "ನೀರಿನ ಸರಬರಾಜು ನಿಂತಿದೆ."),
+    ("ml-IN", "ജലവിതരണം നിലച്ചു."), ("pa-IN", "ਪਾਣੀ ਦੀ ਸਪਲਾਈ ਬੰਦ ਹੈ।"),
+    ("ta-IN", "குடிநீர் விநியோகம் நிறுத்தப்பட்டது."), ("te-IN", "నీటి సరఫరా నిలిచిపోయింది."),
+])
+def test_transcript_preserved(client, mock_gnani, language, text, caplog):
+    state, calls, clients = mock_gnani
     state["body"].update(transcript=text, language_code=language)
     response = upload(client, language=language)
     assert response.status_code == 200
     assert response.json() == state["body"]
     assert len(calls) == 1
     request = calls[0]
-    assert str(request.url) == sarvam.SARVAM_STT_URL
-    assert request.headers["api-subscription-key"] == "mock-only"
-    assert b"saaras:v4" in request.content and b"transcribe" in request.content
+    assert str(request.url) == speech.STT_ENDPOINT
+    assert request.headers["X-API-Key-ID"] == "mock-only"
+    assert b"prisma-v3.0" in request.content and b"prisma-v3.0" in request.content
     assert b"recording.wav" in request.content
     assert all(c.is_closed for c in clients)
     assert text not in caplog.text and "mock-only" not in caplog.text
 
 
 @pytest.mark.parametrize("auth", [{}, {"Authorization": "Bearer invalid"}])
-def test_auth_required(client, mock_sarvam, auth):
+def test_auth_required(client, mock_gnani, auth):
     assert upload(client, auth=auth).status_code == 401
-    assert not mock_sarvam[1]
+    assert not mock_gnani[1]
 
 
-@pytest.mark.parametrize("setting,value", [("TRANSCRIPTION_ENABLED", False), ("SARVAM_API_KEY", "")])
-def test_unavailable_configuration(client, mock_sarvam, monkeypatch, setting, value):
+@pytest.mark.parametrize("setting,value", [("TRANSCRIPTION_ENABLED", False), ("GNANI_API_KEY", "")])
+def test_unavailable_configuration(client, mock_gnani, monkeypatch, setting, value):
     monkeypatch.setattr(config, setting, value)
     response = upload(client)
     assert response.status_code == 503
     assert set(response.json()) == {"error"}
-    assert not mock_sarvam[1]
+    assert not mock_gnani[1]
 
 
 @pytest.mark.parametrize("audio,status", [(b"", 400), (b"webm", 415), (wav_bytes()[:-1], 400), (b"x" * (1048576 + 1), 413), (wav_bytes(480001), 400)], ids=["empty", "webm", "truncated", "oversized", "over-duration"])
-def test_bad_audio_rejected(client, mock_sarvam, audio, status):
+def test_bad_audio_rejected(client, mock_gnani, audio, status):
     assert upload(client, audio=audio).status_code == status
-    assert not mock_sarvam[1]
+    assert not mock_gnani[1]
 
 
 def test_exact_30_seconds(client):
     assert upload(client, wav_bytes(480000)).status_code == 200
 
 
-@pytest.mark.parametrize("language", ["", "unknown", "ta-IN"])
-def test_invalid_language(client, mock_sarvam, language):
+@pytest.mark.parametrize("language", ["", "unknown", "xx-IN"])
+def test_invalid_language(client, mock_gnani, language):
     assert upload(client, language=language).status_code == 400
-    assert not mock_sarvam[1]
+    assert not mock_gnani[1]
 
 
-def test_missing_and_extra_fields(client, mock_sarvam):
+def test_missing_and_extra_fields(client, mock_gnani):
     assert client.post("/transcribe", headers=headers(), json={}).status_code == 400
     assert client.post("/transcribe", headers=headers(), files={"file": ("x.wav", wav_bytes())}).status_code == 400
     assert client.post("/transcribe", headers=headers(), data={"language_code": "en-IN", "extra": "x"}, files={"file": ("x.wav", wav_bytes())}).status_code == 400
-    assert not mock_sarvam[1]
+    assert not mock_gnani[1]
 
 
-def test_body_size_guard(client, mock_sarvam):
+def test_body_size_guard(client, mock_gnani):
     assert upload(client, b"x" * 2097153).status_code == 413
-    assert not mock_sarvam[1]
+    assert not mock_gnani[1]
 
 
 def test_streamed_body_guard_without_length():
@@ -174,17 +180,17 @@ def test_streamed_body_guard_without_length():
     assert sent[0]["status"] == 413
 
 
-def test_idempotent_replay_and_conflict(client, mock_sarvam):
+def test_idempotent_replay_and_conflict(client, mock_gnani):
     auth = headers(key="same-recording")
     first = upload(client, auth=auth)
     assert upload(client, auth=auth).json() == first.json()
     assert upload(client, language="hi-IN", auth=auth).status_code == 409
-    assert len(mock_sarvam[1]) == 1
+    assert len(mock_gnani[1]) == 1
 
 
 @pytest.mark.parametrize("status", [402, 403, 429, 500, 503, 422, 302])
-def test_provider_errors_safe_and_no_retry(client, mock_sarvam, status, caplog):
-    state, calls, clients = mock_sarvam
+def test_provider_errors_safe_and_no_retry(client, mock_gnani, status, caplog):
+    state, calls, clients = mock_gnani
     state.update(status=status, body={"error": "sensitive provider details"})
     auth = headers(key="failure")
     response = upload(client, auth=auth)
@@ -196,27 +202,27 @@ def test_provider_errors_safe_and_no_retry(client, mock_sarvam, status, caplog):
     assert not route.transcription_limits._attempts[("voice-user", "failure")].active
 
 
-def test_timeout_cleanup(client, mock_sarvam):
-    state, calls, clients = mock_sarvam
+def test_timeout_cleanup(client, mock_gnani):
+    state, calls, clients = mock_gnani
     state["exception"] = httpx.ReadTimeout("sensitive detail")
     assert upload(client).status_code == 504
     assert len(calls) == 1 and all(c.is_closed for c in clients)
 
 
-@pytest.mark.parametrize("body", [{}, {"transcript": None}, {"transcript": 123}, {"transcript": " "}, {"transcript": "x", "language_code": []}, []])
-def test_invalid_provider_response(client, mock_sarvam, body):
-    mock_sarvam[0]["body"] = body
+@pytest.mark.parametrize("body", [{}, {"transcript": None}, {"transcript": 123}, {"transcript": " "}, {"transcript": "x", "detected_language_code": []}, []])
+def test_invalid_provider_response(client, mock_gnani, body):
+    mock_gnani[0]["body"] = body
     assert upload(client).status_code == 502
 
 
-def test_invalid_json_and_large_provider_response(client, mock_sarvam):
-    mock_sarvam[0]["raw"] = b"not json"
+def test_invalid_json_and_large_provider_response(client, mock_gnani):
+    mock_gnani[0]["raw"] = b"not json"
     assert upload(client).status_code == 502
-    mock_sarvam[0]["raw"] = b"x" * 65537
+    mock_gnani[0]["raw"] = b"x" * 65537
     assert upload(client).status_code == 502
 
 
-def test_file_closed_after_provider_failure(client, mock_sarvam, monkeypatch):
+def test_file_closed_after_provider_failure(client, mock_gnani, monkeypatch):
     from starlette.datastructures import UploadFile
     closed = []
     original = UploadFile.close
@@ -224,36 +230,36 @@ def test_file_closed_after_provider_failure(client, mock_sarvam, monkeypatch):
         await original(self)
         closed.append(self.file.closed)
     monkeypatch.setattr(UploadFile, "close", close)
-    mock_sarvam[0]["status"] = 500
+    mock_gnani[0]["status"] = 500
     assert upload(client).status_code == 502
     assert closed and all(closed)
 
 
-def test_pending_token_cannot_transcribe(client, mock_sarvam):
+def test_pending_token_cannot_transcribe(client, mock_gnani):
     from backend.app.auth import create_pending_token
     auth = {"Authorization": "Bearer " + create_pending_token("voice-user", "USER")}
     assert upload(client, auth=auth).status_code == 401
-    assert not mock_sarvam[1]
+    assert not mock_gnani[1]
 
 
-def test_endpoint_throttle_rejects_before_provider(client, mock_sarvam):
+def test_endpoint_throttle_rejects_before_provider(client, mock_gnani):
     for _ in range(3):
         assert upload(client).status_code == 200
     response = upload(client)
     assert response.status_code == 429
     assert response.headers["retry-after"] == "60"
-    assert len(mock_sarvam[1]) == 3
+    assert len(mock_gnani[1]) == 3
 
 
-def test_global_budget_counts_provider_failure(client, mock_sarvam, monkeypatch):
+def test_global_budget_counts_provider_failure(client, mock_gnani, monkeypatch):
     monkeypatch.setattr(config, "TRANSCRIPTION_GLOBAL_ATTEMPT_LIMIT", 1)
-    mock_sarvam[0]["status"] = 500
+    mock_gnani[0]["status"] = 500
     assert upload(client).status_code == 502
     assert upload(client, auth=headers("other-user")).status_code == 503
-    assert len(mock_sarvam[1]) == 1
+    assert len(mock_gnani[1]) == 1
 
 
-def test_duplicate_fields_and_invalid_key(client, mock_sarvam):
+def test_duplicate_fields_and_invalid_key(client, mock_gnani):
     response = client.post("/transcribe", headers=headers(), files=[
         ("file", ("x.wav", wav_bytes(), "audio/wav")),
         ("language_code", (None, "en-IN")),
@@ -261,14 +267,14 @@ def test_duplicate_fields_and_invalid_key(client, mock_sarvam):
     ])
     assert response.status_code == 400
     assert upload(client, auth=headers(key="bad key")).status_code == 400
-    assert not mock_sarvam[1]
+    assert not mock_gnani[1]
 
 
-def test_network_failure_cleanup(client, mock_sarvam):
-    mock_sarvam[0]["exception"] = httpx.ConnectError("private error")
+def test_network_failure_cleanup(client, mock_gnani):
+    mock_gnani[0]["exception"] = httpx.ConnectError("private error")
     response = upload(client)
     assert response.status_code == 502 and "private" not in response.text
-    assert all(c.is_closed for c in mock_sarvam[2])
+    assert all(c.is_closed for c in mock_gnani[2])
 
 
 def test_upload_deadline(monkeypatch):
@@ -300,7 +306,7 @@ def test_cancelled_provider_releases_reservation(monkeypatch):
             return FormContext()
     async def cancelled(*args):
         raise asyncio.CancelledError()
-    monkeypatch.setattr(sarvam, "transcribe", cancelled)
+    monkeypatch.setattr(speech, "transcribe", cancelled)
     with pytest.raises(asyncio.CancelledError):
         asyncio.run(route.transcribe(FakeRequest(), {"user_id": "voice-user"}))
     assert upload_file.file.closed
@@ -315,7 +321,7 @@ def test_concurrent_endpoint_calls(app, monkeypatch):
             entered.put_nowait(True)
             await release.wait()
             return {"transcript": "mock result", "language_code": language}
-        monkeypatch.setattr(sarvam, "transcribe", delayed_provider)
+        monkeypatch.setattr(speech, "transcribe", delayed_provider)
         async with httpx.AsyncClient(transport=httpx.ASGITransport(app=app), base_url="http://test") as client:
             async def send(user, key):
                 return await client.post("/transcribe", headers=headers(user, key),
@@ -334,8 +340,8 @@ def test_concurrent_endpoint_calls(app, monkeypatch):
     asyncio.run(scenario())
 
 
-def test_invalid_deep_json_is_sanitized(client, mock_sarvam):
-    mock_sarvam[0]["raw"] = b"[" * 2000 + b"0" + b"]" * 2000
+def test_invalid_deep_json_is_sanitized(client, mock_gnani):
+    mock_gnani[0]["raw"] = b"[" * 2000 + b"0" + b"]" * 2000
     assert upload(client).status_code == 502
 
 

@@ -16,6 +16,7 @@ import { AnalysisPanel, StatusTimeline } from "./GrievanceCard";
 import { SinglePinMap } from "@/components/admin/SinglePinMap";
 import { getGrievanceHistory, requestFurtherAction, submitResolutionFeedback } from "@/lib/api";
 import { departmentKey, useI18n } from "@/lib/i18n";
+import { SpeakButton } from "./SpeakButton";
 import type { Grievance } from "@/lib/types";
 
 function formatDate(iso?: string | null): string {
@@ -42,7 +43,8 @@ export function GrievanceDetailModal({
   /** Citizen surfaces hide internal routing: priority + department. */
   citizenView?: boolean;
 }) {
-  const { t } = useI18n();
+  const { t, language } = useI18n();
+  const speechLanguage = language === "hi" ? "hi-IN" : language === "mr" ? "mr-IN" : "en-IN";
   const [history, setHistory] = useState<Record<string, unknown>[]>([]);
   const [loadingHistory, setLoadingHistory] = useState(true);
   const [rating, setRating] = useState(5);
@@ -141,6 +143,7 @@ export function GrievanceDetailModal({
                 {grievance.id}
               </span>
               <StatusBadge status={grievance.state ?? grievance.status} />
+              {citizenView && <SpeakButton text={`Your grievance ${grievance.id} is currently ${String(grievance.state ?? grievance.status).replaceAll("_", " ")}.`} language={speechLanguage} label={t("speechListenStatus")} />}
               {!citizenView && (
                 <>
                   <PriorityBadge priority={grievance.priority} />
@@ -183,6 +186,7 @@ export function GrievanceDetailModal({
             <section className="rounded-lg border border-primary-200 bg-primary-50/40 p-4">
               <h3 className="text-sm font-bold text-ink-950">{t("resolutionSummary")}</h3>
               <p className="mt-2 whitespace-pre-wrap text-sm leading-relaxed text-ink-700">{grievance.resolution.text}</p>
+              <div className="mt-2"><SpeakButton text={grievance.resolution.text ?? ""} language={speechLanguage} label={t("speechListenResolution")} /></div>
               {!!grievance.resolution.actions?.length && <ul className="mt-2 list-disc space-y-1 pl-5 text-sm text-ink-700">{grievance.resolution.actions.map((action, i) => <li key={i}>{action}</li>)}</ul>}
             </section>
           )}
@@ -196,6 +200,7 @@ export function GrievanceDetailModal({
               <p className="mt-2 whitespace-pre-wrap text-sm leading-relaxed text-ink-800 bg-ink-50/40 rounded-lg p-4 border border-ink-100">
                 {grievance.description}
               </p>
+              {citizenView && <div className="mt-2"><SpeakButton text={grievance.description} language={speechLanguage} label={t("speechListenDescription")} /></div>}
             </div>
 
             {/* Metadata Grid */}
@@ -329,6 +334,7 @@ export function GrievanceDetailModal({
                             "Status update recorded"
                         )}
                       </p>
+                      {citizenView && <div className="mt-2"><SpeakButton text={String(entry.bodyCustomer ?? entry.workCompleted ?? entry.reason ?? "Status update recorded")} language={speechLanguage} label={t("speechListenUpdate")} /></div>}
                     </div>
                   ))}
                 </div>

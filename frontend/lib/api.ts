@@ -159,7 +159,7 @@ function patchJson<T>(path: string, body: unknown): Promise<T> {
 
 const transcriptionSchema = z.object({
   transcript: z.string().min(1).max(16000).refine((value) => value.trim().length > 0),
-  language_code: z.enum(["en-IN", "hi-IN", "mr-IN"]).nullable(),
+  language_code: z.enum(["en-IN", "hi-IN", "mr-IN", "bn-IN", "gu-IN", "kn-IN", "ml-IN", "pa-IN", "ta-IN", "te-IN"]).nullable(),
   request_id: z.string().max(200).optional(),
 });
 
@@ -191,6 +191,20 @@ export async function transcribeAudio(
     clearTimeout(timer);
     signal?.removeEventListener("abort", abort);
   }
+}
+
+/** Timbre is called only after an explicit speaker-button action. */
+export async function synthesizeSpeech(text: string, language: string): Promise<Blob> {
+  const token = getStoredAccessToken();
+  if (!token) throw Object.assign(new Error("Not authenticated"), { status: 401 });
+  const response = await fetch(`${API_URL}/speech/synthesize`, {
+    method: "POST",
+    headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json", Accept: "audio/wav" },
+    body: JSON.stringify({ text, language_code: language }),
+    cache: "no-store",
+  });
+  if (!response.ok) throw Object.assign(new Error("Speech generation unavailable"), { status: response.status });
+  return response.blob();
 }
 
 export const INTAKE_TIMEOUT_MS = 45000;

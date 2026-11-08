@@ -4,9 +4,12 @@
 
 ## Overview
 
-Stage 4B adds a co-located authenticated Sarvam transcription router/service,
-strict WAV validation and process-local usage limits. No persistent audio or
-grievance/database workflow changes. See [VOICE_ASSISTED_COMPLAINT.md](VOICE_ASSISTED_COMPLAINT.md).
+Gnani speech is isolated in a co-located, provider-facing speech service and
+authenticated speech routers. Prisma transcription uses strict WAV validation,
+bounded process-local usage limits and request idempotency; Timbre synthesis is
+explicitly requested, metadata-logged and served through a bounded response
+cache. Neither route changes grievance persistence or authorization. See
+[VOICE_ASSISTED_COMPLAINT.md](VOICE_ASSISTED_COMPLAINT.md).
 
 The system follows a three-tier architecture:
 
