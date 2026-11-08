@@ -2,10 +2,11 @@
 
 **AI-Powered Grievance Redressal & Management Platform** — Every grievance deserves a resolution.
 
-CIVORA is a B.Tech academic research prototype for managing civic grievances.
-It combines a citizen-facing complaint portal with role-based staff workflows,
-department analytics, and experimental AI-assisted triage. It is a prototype,
-not an official government service or a national grievance platform.
+CIVORA is a web-based grievance redressal and management platform for civic
+complaints. It combines a citizen-facing complaint portal with role-based
+staff workflows, department analytics, and AI-assisted triage. It is an
+independent system, not an official government service or a national
+grievance portal.
 
 AI outputs are advisory. Authorized people make the final decisions about
 department routing, employee assignment, escalation, resolution approval, and
@@ -310,20 +311,18 @@ validation evidence.
 
 ## AI status and known limitations
 
-- Category classification is a prototype cascade using a local
+- Category classification is an early-stage cascade using a local
   word/character model, deterministic rules, and optional provider fallbacks.
   It is experimental and must not be treated as validated accuracy.
 - Priority and urgency values are advisory. A human reviews department routing
   and assigns employees.
 - Related-complaint grouping uses client-side TF-IDF; semantic embedding search
   is not implemented.
-- Several planned research modules, including persisted summarization, entity
+- Several planned modules, including persisted summarization, entity
   extraction, delay-risk estimation, AI escalation recommendations, and
-  resolution-quality assessment, are not complete. See
-  [Current project state](memory/CURRENT_STATE.md) for the implementation
-  status and remaining work.
-- The application is an academic prototype. It has not been approved or
-  validated for real government operations or production-scale use.
+  resolution-quality assessment, are not complete.
+- The application has not been approved or validated for real government
+  operations or production-scale use.
 
 ## Deployment
 
