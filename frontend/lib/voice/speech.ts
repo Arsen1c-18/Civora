@@ -3,7 +3,7 @@
  * Every question is a fixed template, so the audio is a static file under
  * `/voice/questions/` — generated once per language and committed. No network
  * call to a TTS provider, no per-conversation spend, and questions still play
- * when Sarvam is unreachable.
+ * when the speech provider is unreachable.
  *
  * Browsers block audio that starts outside a user gesture. Questions play
  * *after* an async STT/LLM round-trip, so `unlock()` must be called from a real

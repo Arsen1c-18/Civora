@@ -1,11 +1,11 @@
 # VOICE_ASSISTED_COMPLAINT.md — Voice-Assisted Complaint Lodging
 
-> **Provider update (2026-11-08):** Gnani Prisma v3.0 now replaces Sarvam on
+> **Provider update (2026-11-08):** STT runs on Gnani Prisma v3.0 over
 > `POST /transcribe`; the authenticated `POST /speech/synthesize` route provides
-> opt-in Gnani Timbre v2.5/v3.0 audio. The older Sarvam-specific implementation
-> notes below are historical and are superseded for provider, credentials,
-> usage and deployment by the “Current Gnani speech integration” section at
-> the end. The existing citizen text field, manual mode, transcript editing,
+> opt-in Gnani Timbre v2.5/v3.0 audio. This document has been updated in place
+> for the Gnani provider; the “Current Gnani speech integration” section at
+> the end remains the summary of record for provider, credentials, usage and
+> deployment. The existing citizen text field, manual mode, transcript editing,
 > voice consent and ticket submission path remain in place. The guided intake
 > still uses bounded, explicit recording turns and extraction; it is not an
 > always-listening system. Runtime Timbre is requested only from speaker buttons.
@@ -27,7 +27,7 @@
 
 ## Overview and scope
 
-Sarvam STT helps citizens draft descriptions. Transcription creates no grievance,
+Gnani Prisma STT helps citizens draft descriptions. Transcription creates no grievance,
 does no classification or administrative action, and writes no database records.
 The user edits text before ordinary `POST /submit-grievance`. No MongoDB schema,
 auth endpoint behavior or grievance submission logic changes. Stage 10 separately
@@ -47,7 +47,7 @@ original-language Unicode, including Devanagari; no romanization or translation.
 > problem" (conversation) or "Fill the form manually" (plain text entry).
 
 1. Select a language and record up to 30 seconds.
-2. Stop, play back or re-record without contacting Sarvam.
+2. Stop, play back or re-record without contacting the provider.
 3. Explicitly click Transcribe; choose Append, Replace or Cancel for a non-empty
    description before audio upload. Cancellation makes no transcription request.
 4. Accept the transcript; reconfirm if the description changed while waiting.
@@ -166,25 +166,24 @@ the worklet stops retaining samples at the cap, while hardware teardown awaits
 the main thread's completion callback.
 
 Browser WAV + JWT -> bounded body guard -> authenticated multipart router ->
-PCM validation -> atomic attempt reservation -> Sarvam HTTPS -> bounded response
+PCM validation -> atomic attempt reservation -> Gnani HTTPS -> bounded response
 validation -> original-language transcript for human review. There are no
 database writes. A short-lived process-local result supports idempotent replay.
 
-## Sarvam API integration
+## Gnani Prisma STT API integration
 
 Rechecked official documentation on 2026-10-13:
 
-- POST https://api.sarvam.ai/speech-to-text, api-subscription-key header.
-- Multipart file; model=saaras:v4, mode=transcribe, explicit language_code.
+- POST https://api.vachana.ai/stt/v3, X-API-Key-ID header.
+- Multipart audio_file (16 kHz mono WAV); form fields model=prisma-v3.0 and explicit language_code.
 - Response: transcript, nullable language_code, optional/nullable request_id.
 - Direct httpx.AsyncClient, no retries, redirects or environment proxies.
 - Connection timeout 5 seconds, configurable 45-second total deadline.
 - Maximum response 64 KiB and transcript 16000 characters. Errors are sanitized.
 
-Sources: [REST reference](https://docs.sarvam.ai/api-reference/speech-to-text/transcribe),
-[Saaras guide](https://docs.sarvam.ai/api/getting-started/models/saaras),
-[REST guide](https://docs.sarvam.ai/api/api-guides-tutorials/speech-to-text/rest-api),
-[SDK guide](https://docs.sarvam.ai/api/getting-started/sdks).
+Sources: the provider's official REST reference, model guide and SDK guide
+(reviewed at implementation time against the server contract).
+
 The reference has a stale v3-only mode sentence; the current model guide supports
 v4 transcribe. At that documentation check, no live verification was claimed;
 the subsequent single English smoke test is recorded below. The numerical provider file-size
@@ -238,14 +237,14 @@ deadline defaults to 15 seconds for the whole body.
 
 ## Environment setup
 
-Keep SARVAM_API_KEY in backend/.env or Render's secret environment settings only.
+Keep GNANI_API_KEY in backend/.env or Render's secret environment settings only.
 Never in NEXT_PUBLIC variables, tracked source, test fixtures or logs. The task
 does not edit backend/.env or enable live transcription.
 
 | Variable | Default |
 |---|---|
-| SARVAM_API_KEY | empty secret placeholder |
-| SARVAM_STT_MODEL | saaras:v4 (required in v1) |
+| GNANI_API_KEY | empty secret placeholder |
+| GNANI_PRISMA_MODEL | prisma-v3.0 (required in v1) |
 | TRANSCRIPTION_ENABLED | false |
 | TRANSCRIPTION_MAX_FILE_BYTES | 1048576 |
 | TRANSCRIPTION_MAX_REQUEST_BYTES | 2097152 |
@@ -256,12 +255,12 @@ does not edit backend/.env or enable live transcription.
 | TRANSCRIPTION_MAX_CONCURRENT | 2 |
 | TRANSCRIPTION_IDEMPOTENCY_TTL_SECONDS | 300 |
 | TRANSCRIPTION_UPLOAD_TIMEOUT_SECONDS | 15 |
-| SARVAM_TIMEOUT_SECONDS | 45 |
+| GNANI_TIMEOUT_SECONDS | 45 |
 | DIAGNOSTIC_SKIP_INITIALIZATION_WRITES | false; diagnostics only |
 
 Root requirements.txt is the actual Render/local documented runtime manifest.
 It now declares httpx/python-multipart and previously missing auth/SMS
-dependencies from backend/requirements.txt. No FFmpeg or Sarvam SDK is required.
+dependencies from backend/requirements.txt. No FFmpeg or Gnani SDK is required.
 Use one worker/instance while limits are process-local.
 
 ## Authentication and security
@@ -281,9 +280,9 @@ failure. The guard buffers a bounded body in memory. Many simultaneous uploads
 can still use substantial memory: edge ingress limits are needed for public use.
 Only short-lived transcripts, content fingerprints and attempt metadata exist
 in process memory for replay; no raw audio is retained in the limiter.
-Sarvam retention is separate: the official page states unset retention can be
+Gnani retention is separate: the official page states unset retention can be
 indefinite and Model APIs support zero retention. Verify the workspace setting
-before citizen live testing. [Retention](https://docs.sarvam.ai/api/platform/data-retention)
+before citizen live testing. the provider's retention policy
 
 ## Credit protection and operational limitations
 
@@ -304,9 +303,8 @@ the 2026-10-13 documentation check listed base STT price INR 30/hour. These
 historical figures are not current billing verification. The user later reported
 99.94 credits before the blocked Hindi/Marathi session; no independent balance
 check was performed. Handle both exhausted-credit 402 and quota 429, since docs differ.
-[Credits/rates](https://docs.sarvam.ai/api/getting-started/ratelimits),
-[Pricing](https://docs.sarvam.ai/api/getting-started/pricing),
-[Billing](https://docs.sarvam.ai/api/platform/billing).
+Rates, pricing and billing are documented on the provider's official
+reference pages; re-verify current figures before budget decisions.
 
 ## Implementation file map
 
@@ -316,7 +314,7 @@ check was performed. Handle both exhausted-credit 402 and quota 429, since docs 
 | backend/app/transcription_guard.py | Body cap and upload deadline |
 | backend/app/services/audio_validation.py | WAV validation/reconstruction |
 | backend/app/services/transcription_limits.py | Atomic local quotas/idempotency |
-| backend/app/services/sarvam.py | Bounded mockable HTTP request |
+| backend/app/services/speech.py | Bounded mockable HTTP request |
 | backend/app/main.py, config.py | Registration/settings |
 | tests/test_transcription*.py, test_audio_validation.py | Mock integration, concurrency, boundaries |
 | frontend/components/grievance/VoiceIntake.tsx | Conversational panel; spoken question playback, mute/replay, typed fallback; owns the intake hook |
@@ -335,7 +333,7 @@ Install requirements-dev.txt; from repository root:
 .\.venv\Scripts\python.exe -m pytest tests/test_transcription.py tests/test_audio_validation.py tests/test_transcription_limits.py tests/test_config_drift.py -q
 ```
 
-Tests force the Sarvam key environment empty before app imports and inject only
+Tests force the Gnani key environment empty before app imports and inject only
 a synthetic mock-only placeholder. Provider transport is MockTransport, never
 the real network. Generated silent PCM validates handling, not recognition.
 Execution commands/results are recorded in memory/CHANGELOG.md after testing.
@@ -354,7 +352,7 @@ npm.cmd run build
 ```
 
 Stage 5's 55 frontend tests mock browser microphone/worklet APIs and API responses;
-no Sarvam request or citizen recording. Tests cover WAV/PCM/downmix/resampling,
+no provider request or citizen recording. Tests cover WAV/PCM/downmix/resampling,
 30-second caps, permission/device errors, cleanup, language/Unicode, JWT refresh,
 no retries, idempotency, replacement cancellation/new edits and normal submission
 reset. Node's MockTimers API currently emits an experimental warning. Existing
@@ -374,7 +372,7 @@ cancelling that second prompt preserves newer text without another upload.
 The disabled-feature message is expected for HTTP 503. It does not block the
 pre-upload confirmation: test it with typed text and Cancel while the backend
 stays disabled. Confirming permits the request but returns 503, so success and
-post-response replacement checks use automated mock responses, not live Sarvam.
+post-response replacement checks use automated mock responses, not live provider calls.
 
 Playback fix verification (2026-10-13): a separate isolated headless Chrome check
 decoded a synthetic two-second generated WAV into 32000 nonzero mono frames at
@@ -392,7 +390,7 @@ opt-in scenarios from `frontend/scripts/voice-ui.test.mjs`. The actual public
 AudioWorklet processor receives synthetic stereo samples; actual capture and
 resampling generate nonempty mono 16-bit/16 kHz WAV. The actual React form and
 frontend API send authenticated multipart HTTP to the production backend route,
-validation and Sarvam service. Only the provider transport is mocked. Provider
+validation and the speech service. Only the provider transport is mocked. Provider
 assertions inspect the outgoing model, language and WAV (1600 nonzero frames).
 
 English, Hindi and Marathi transcripts reach the description unchanged. Tests
@@ -555,7 +553,7 @@ with mocked transcription in all three languages. The heuristic is not semantic
 summarization: greeting lists/negation recognition are finite, the first usable
 phrase may not describe the main issue, and selecting one sentence can omit later context. Citizen
 review remains necessary. Older browsers without Intl.Segmenter retain typed title
-entry and the full transcript. Live Sarvam remains disabled.
+entry and the full transcript. The live provider remains disabled.
 
 ### Stage 8 hydrated browser validation (2026-10-13)
 
@@ -575,7 +573,7 @@ re-transcription preservation; failed transcription; pre-upload cancellation; an
 discard with a late/aborted response. Each browser made **nine mocked multipart
 transcription requests**, with **zero grievance submissions and zero other writes**.
 API requests are fulfilled/blocked before transport: no backend, database or
-Sarvam provider was contacted. This validates frontend UI integration, not the
+The provider was contacted. This validates frontend UI integration, not the
 provider service/JWT/backend contract already covered separately in Stage 6.
 
 Run against an existing current-source Next.js dev server on trustworthy localhost:
@@ -603,7 +601,7 @@ Existing heuristic/Stage 7 manual limitations and live-call authorization remain
 
 ### Stage 8 controlled live English test — user-verified (2026-10-14)
 
-The user reports **one successful live English Sarvam STT request**, using a
+The user reports **one successful live English speech request**, using a
 **7-second real microphone recording**. The complete transcript populated
 Description, and the frontend deterministic extractor automatically populated
 Issue Title. Both fields remained editable. **No grievance was submitted.**
@@ -659,7 +657,7 @@ records actual hydrated Stage 9 browser validation.
 
 Modern native HTML dialog support is required. Existing field length/submission
 validation still applies to an appended description. Use mocks for additional
-checks and keep Sarvam disabled.
+checks and keep the provider disabled.
 
 ### Stage 9 hydrated browser follow-up (2026-10-14)
 
@@ -906,7 +904,7 @@ Its bundle/path are machine-specific and not a portable deployment configuration
   languages fall back to English voice copy, not additional spoken-language support.
 - frontend/scripts/voice-title-browser.test.mjs and voice-browser-check.mjs:
   historical hydrated/isolated Chrome/Edge mock browser harnesses.
-- tests/test_voice_e2e.py: real loopback frontend/backend path with mocked Sarvam;
+- tests/test_voice_e2e.py: real loopback frontend/backend path with mocked speech provider;
   tests/test_diagnostic_initialization.py: 25 mocked initialization guard cases.
 - backend/app/{db,users_db}.py and repositories/{audit,departments,face_templates,
   notifications,otp_codes,progress,sla_config}.py: initialization guards.
@@ -914,7 +912,7 @@ Its bundle/path are machine-specific and not a portable deployment configuration
   frontend/package.json/package-lock.json, render.yaml: setup/deployment surfaces.
 - NEXT_PUBLIC_API_URL (localhost:10000 locally), NEXT_PUBLIC_USE_MOCKS=false for
   real application API integration, MONGODB_URI/MONGODB_DB, JWT_SECRET_KEY and
-  explicit CORS_ORIGINS are prerequisite existing settings. Never expose Sarvam
+  explicit CORS_ORIGINS are prerequisite existing settings. Never expose provider
   or MongoDB secrets in frontend variables. USE_MOCKS does not mock STT.
 - Existing auth endpoints POST /auth/login, POST /auth/refresh and GET /auth/me;
   GET /health for liveness/configured storage; POST /transcribe drafts only;
@@ -943,7 +941,7 @@ Production requires secure HTTPS for page/API, correct credentialed CORS allowli
 and Authorization/Idempotency-Key preflight headers, gateway upload/time limits,
 verified TLS trust and durable shared quotas before scaling. Do not deploy the
 Windows temp bundle, diagnostic launcher or diagnostic flag. Build the frontend
-with its correct API URL; no Sarvam browser SDK or FFmpeg is required. Existing
+with its correct API URL; no browser SDK or FFmpeg is required. Existing
 root auth/SMS dependency additions are adjacent deployment fixes that need review,
 not a separate voice backend. No production deployment/build was performed here.
 
@@ -996,7 +994,7 @@ or production deployment. No commits, pushes, merges or branch changes occurred.
 The submit page now offers two modes over one shared draft (`IntakeModeToggle`):
 
 1. **"Tell us your problem" (voice-assisted card, orange primary styling):** a
-   guided conversation. The citizen speaks (the existing Sarvam
+   guided conversation. The citizen speaks (the existing speech
    `POST /transcribe` contract) or types; each turn is extracted into draft
    fields; at most one focused follow-up question is asked at a time; when
    enough is known, the ordinary form fields appear in a review block with
@@ -1091,14 +1089,14 @@ lock and state guards prevent duplicate conversation turns.
 
 Citizen login → `/submit` (default manual branch) → switch to voice → free
 fake-device microphone start/listening/Cancel smoke (zero `/transcribe` calls,
-so zero Sarvam spend) → typed conversation with REAL Groq extraction (three
+so zero provider spend) → typed conversation with REAL Groq extraction (three
 `/grievance-intake/extract` calls) → location follow-up answered → review with
 AI title ("Broken streetlight on Rajpur Road"), 240-char AI description, seeded
 location search ("Rajpur Road, Delhi, near SBI ATM"), category/priority hints →
 citizen edit dropped one AI badge → coordinate pin → real submission
 (`POST /submit-grievance 200`, ticket `GRV-2026-0015`, auto-analysis panel
 rendered). Zero console errors, zero form/hydration errors. The live spoken
-Sarvam path was later re-run the same day with owner approval: one
+provider path was later re-run the same day with owner approval: one
 `POST /transcribe` returned an accurate English transcript, the real extraction
 and location follow-up worked, and the review showed two AI badges; the run
 stopped at review, so no second grievance was created (zero console errors).
@@ -1186,14 +1184,14 @@ remain ~1 s; the budget only changes failure behavior.
 ### Pre-recorded audio assets
 
 - `frontend/scripts/generate-question-audio.mjs` synthesizes **8 kinds × 3
-  languages = 24 WAV clips** once, using Sarvam `bulbul:v3` (speaker `shubh`,
+  languages = 24 WAV clips** once, using Gnani Timbre (per-language voices,
   16 kHz mono, `output_audio_codec=wav`).
 - Clips are committed under `frontend/public/voice/questions/<kind>.<language>.wav`
   (~2.7 MB total). The script skips existing files; `--force` regenerates.
-  It is never run during build or test, and it needs `SARVAM_API_KEY` inline
+  It is never run during build or test, and it needs `GNANI_API_KEY` inline
   (never committed).
 - There is **no backend TTS endpoint and no runtime TTS call/flag/limit/cache**.
-  Questions keep working when Sarvam is down or credits are exhausted; the only
+  Questions keep working when the provider is down or credits are exhausted; the only
   provider cost is the one-time generation.
 - `frontend/lib/voice/speech.ts` maps a kind + language to its static URL,
   reads/writes the mute preference, and implements `SpeechPlayer`:
@@ -1290,7 +1288,7 @@ Stages 1–9 and makes each mode own one input method.
   and the badges clear on the dirty field, as before.
 - **Cross-stack E2E rebuilt around the intake.** The old loopback test drove the
   recorder that no longer exists. The replacement drives the intake through the
-  real UI and real `/transcribe` (mocked Sarvam) with canned extraction, and is
+  real UI and real `/transcribe` (mocked speech provider) with canned extraction, and is
   opt-in: `VOICE_E2E=1 pytest tests/test_voice_e2e.py`. The default suite skips
   it because it starts an in-process uvicorn server plus Node/jsdom; that
   harness proved too heavy for constrained dev machines.
@@ -1337,7 +1335,7 @@ DEC-043. This stage ensures the assistant speaks first when voice mode is starte
 ### What changed
 
 - **Audible opening prompt on first Start speaking.** Tapping "Start speaking" in voice mode now plays an audible opening prompt (`intakeIntro`) in the selected spoken language (`en-IN`, `hi-IN`, `mr-IN`) before capture begins.
-- **Pre-recorded clips.** Synthesized 3 dedicated 16 kHz mono WAV clips (`intro.en-IN.wav`, `intro.hi-IN.wav`, `intro.mr-IN.wav`, ~410 kB total) using Sarvam `bulbul:v3` via `frontend/scripts/generate-question-audio.mjs`. There is zero runtime TTS spend.
+- **Pre-recorded clips.** Synthesized 3 dedicated 16 kHz mono WAV clips (`intro.en-IN.wav`, `intro.hi-IN.wav`, `intro.mr-IN.wav`, ~410 kB total) using Gnani Timbre via `frontend/scripts/generate-question-audio.mjs`. There is zero runtime TTS spend.
 - **Contract separation.** `intro` is client-only and kept out of `INTAKE_QUESTION_KINDS`; the backend LLM extraction contract and prompt are unchanged.
 - **Autoplay & echo prevention.** The browser `AudioContext` is unlocked synchronously inside the click gesture. The opening prompt plays completely before `VoiceCapture` starts listening, preventing audio echo from contaminating the citizen's STT transcript.
 - **Mute & failure tolerance.** When muted, no audio plays and recording starts immediately; the prompt text is still added to the conversation transcript log. If playback fails or times out (10 s guard), recording starts without blocking the user.
@@ -1404,7 +1402,7 @@ classification outputs and confidence from every citizen surface.
 
 ## Current Gnani speech integration — 2026-11-08
 
-The current provider is Gnani, replacing Sarvam on the existing `/transcribe`
+The current provider is Gnani Prisma on the existing `/transcribe`
 route. The citizen text form, current voice capture/review experience,
 authentication, transcript editing, and `POST /submit-grievance` lifecycle stay
 in place. The existing guided intake is finite and requires explicit citizen

@@ -11,7 +11,7 @@ diagnostic startup proposal: [VOICE_ASSISTED_COMPLAINT.md](docs/VOICE_ASSISTED_C
 - Real microphone PCM capture through AudioWorklet; mono 16-bit/16 kHz WAV,
   30-second cap, playback/re-record/discard and cleanup on navigation.
 - Authenticated multipart `POST /transcribe`, strict WAV/body validation,
-  process-local quotas/idempotency and bounded Sarvam HTTP integration.
+  process-local quotas/idempotency and bounded provider HTTP integration.
 - English (`en-IN`), Hindi (`hi-IN`), Marathi (`mr-IN`), without translation.
 - Empty Description accepts the full transcript. Nonempty Description offers
   Append/Replace/Cancel before upload; in-flight edits require another choice.
@@ -41,7 +41,7 @@ diagnostic startup proposal: [VOICE_ASSISTED_COMPLAINT.md](docs/VOICE_ASSISTED_C
    reviewing index/seeding writes. Follow the guide's guarded startup proposal
    only after separate authorization; that corrected proposal is not runtime-tested.
 6. Enable live STT only after explicit authorization, verified backend-only
-   `SARVAM_API_KEY`, `SARVAM_STT_MODEL=saaras:v4`, retention/billing review and an
+   `GNANI_API_KEY`, `GNANI_PRISMA_MODEL=prisma-v3.0`, retention/billing review and an
    agreed attempt budget. Use one worker without reload. Restarting resets quotas.
    Disable immediately after the authorized window; verify disabled behavior.
 
@@ -50,12 +50,12 @@ secure-context browser APIs and HTTPS page/API origins are required in productio
 
 ## Enabling Voice Transcription for Testing
 
-Transcription is **disabled by default to protect Sarvam API credits**. The steps
+Transcription is **disabled by default to control provider costs**. The steps
 below describe a separately authorized local live test; they do not enable it now.
 The existing MongoDB login blocker must be resolved before an authenticated test.
 
 1. Set `TRANSCRIPTION_ENABLED=true` in your local `backend/.env`.
-2. Configure `SARVAM_API_KEY` with a valid key in the backend environment. Keep
+2. Configure `GNANI_API_KEY` with a valid key in the backend environment. Keep
    the key server-side; never use a `NEXT_PUBLIC_*` variable or browser code.
 3. Keep the existing attempt, concurrency and duration limits enabled. Agree on
    a small attempt budget and use one worker without reload. Process restarts

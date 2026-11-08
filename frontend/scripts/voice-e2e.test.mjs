@@ -1,6 +1,6 @@
 // Cross-stack voice intake E2E: the real conversational intake UI drives the
 // real `lib/api.ts` client against the pytest loopback harness, which forwards
-// validated WAVs to a mocked Sarvam provider and answers extraction with a
+// validated WAVs to a mocked speech provider provider and answers extraction with a
 // canned reply (no LLM, no external network).
 //
 // Runs only when `VOICE_E2E_URL` is set (the opt-in pytest harness,

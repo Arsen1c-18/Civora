@@ -124,7 +124,7 @@
 | Environment | Configuration | Use |
 |---|---|---|
 | Local integrated | Backend `uvicorn backend.app.main:app --port 10000`; frontend `npm run dev` on `:3000`; `NEXT_PUBLIC_USE_MOCKS=false`; isolated MongoDB test DB | Primary functional and API testing |
-| Local voice | `TRANSCRIPTION_ENABLED=true`; valid Sarvam key; `NEXT_PUBLIC_API_URL` set; fake media stream available | Voice cases, failure injection |
+| Local voice | `GNANI_PRISMA_ENABLED=true`; valid Gnani key; `NEXT_PUBLIC_API_URL` set; fake media stream available | Voice cases, failure injection |
 | Local external services | Groq key optional; Cloudinary test cloud/preset; LLM image validation key optional | AI/photo cases; record which providers are live |
 | Staging / deployed | Render backend + frontend, isolated test database, seeded synthetic accounts, SMS dry-run, real OTP debug disabled | Pre-release smoke and authorization checks |
 | Mock UI | `NEXT_PUBLIC_USE_MOCKS=true` | UI-only previews; **not** valid evidence for integration, auth, AI, or persistence tests |
@@ -209,7 +209,7 @@ Never assert against a pre-existing production reference number.
 3. Voice cases run with the feature flag enabled and microphone permission
    controllable; where no microphone exists, cases are marked Blocked rather
    than Pass.
-4. Cloudinary and Sarvam credentials are test-scoped and may be unavailable;
+4. Cloudinary and Gnani credentials are test-scoped and may be unavailable;
    availability is recorded per run.
 5. Captcha is never disabled for a test run. Testers solve it or use the
    local visual challenge; bypassing security controls invalidates the result.
@@ -224,7 +224,7 @@ Never assert against a pre-existing production reference number.
   (or conscious use of the in-memory fallback, recorded as such).
 - Seed/cleanup mechanism for synthetic accounts and grievances.
 - Valid Cloudinary test configuration for photo cases.
-- Valid Sarvam configuration and `TRANSCRIPTION_ENABLED=true` for voice.
+- Valid Gnani configuration and `GNANI_PRISMA_ENABLED` for voice.
 - Optional Groq/HF keys for AI-provider cases; keyword fallback must still be
   testable without them.
 - Browser with microphone, camera, localStorage, and a modern media stack.
@@ -347,7 +347,7 @@ only to confirm that a citizen cannot use them.
 | Letterless submission validation | IMPLEMENTED | Text with no Unicode letters returns 400 before provider work (DEC-059) |
 | Civic-scope submission gate | IMPLEMENTED | Clear non-civic intent returns 422 before image/provider/reference/persistence (DEC-062); ambiguous text stays reviewable |
 | Quality/suspicious-submission flag | IMPLEMENTED, conditional | Runs only when local classification abstains; returns `flagged`; provider failure fails open; clear non-civic text is rejected by the separate gate |
-| Conversational voice intake | IMPLEMENTED, flag-gated | Sarvam STT + LLM extraction; STT accuracy EXPERIMENTAL |
+| Conversational voice intake | IMPLEMENTED, flag-gated | Gnani STT + LLM extraction; STT accuracy EXPERIMENTAL |
 | Single-shot manual dictation | REMOVED | DEC-041: manual branch is text-only |
 | Personal grievance list | IMPLEMENTED | Newest-first, default limit 50, no pagination control |
 | Status timeline | PARTIAL | Static 5-milestone visual remains; citizen detail also fetches customer-visible updates and sanitized state history |
@@ -385,7 +385,7 @@ only to confirm that a citizen cannot use them.
 | `POST /validate-image` | Public | LLM image validation called by the photo uploader |
 | `GET /notifications` | Bearer | Own notifications |
 | `PATCH /notifications/{id}/read`, `/notifications/read-all` | Bearer | Read state |
-| `POST /transcribe` | Bearer | Sarvam STT (flag-gated) |
+| `POST /transcribe` | Bearer | Gnani STT (flag-gated) |
 | `POST /grievance-intake/extract` | Bearer | Stateless conversational extraction |
 | `GET /config` | Public | Feature flags such as face auth |
 | `GET /health` | Public | Availability/storage mode |
@@ -641,7 +641,7 @@ through visible labels.
 ## 9. Voice-Assisted Grievance Intake (USR-VOICE)
 
 **What is covered:** the conversational voice workflow that actually exists
-(DEC-038/DEC-041): microphone consent, Sarvam transcription, stateless AI
+(DEC-038/DEC-041): microphone consent, Gnani transcription, stateless AI
 extraction, one clarification question, review, manual correction, and every
 documented failure path.
 
@@ -865,7 +865,7 @@ These journeys exercise multiple modules in one realistic session. They are the\
 | **Persona** | Meera, 46, comfortable in Hindi, limited English, uses a phone with a microphone |
 | **Priority / type** | P1 · Positive end-to-end (external service) |
 | **Covers** | USR-VOICE-001, VOICE-006, VOICE-014, VOICE-017; USR-GRV-002; USR-TRACK-001; USR-ACC-011 |
-| **Preconditions** | Voice flag on; Sarvam STT available; microphone permission allowed; Hindi text rendering; Cloudinary available for the photo |
+| **Preconditions** | Voice flag on; Gnani STT available; microphone permission allowed; Hindi text rendering; Cloudinary available for the photo |
 | **Test data** | Hindi water complaint from §1.7; `water-evidence.jpg`; location `शिवाजीनगर, पुणे` or `Shivajinagar, Pune` |
 | **Steps** | 1. Switch the interface to Hindi and confirm labels render.<br>2. Open `/submit`, choose Voice, set complaint language to Hindi.<br>3. Start, grant microphone permission, speak the complaint, and stop.<br>4. Inspect the Devanagari transcript and proposed fields.<br>5. Answer/skip any clarification; switch to manual to correct one word; return to review.<br>6. When the spoken location is suggested, search/select the correct place and confirm the pin; confirm no automatic pin was made.<br>7. Add the photo or skip it.<br>8. Submit and record the reference.<br>9. Open `/track` and verify the grievance and status. |
 | **Expected result** | The voice path produces a reviewable Hindi draft; the citizen explicitly corrects and confirms the location; the photo is optional; submission succeeds once; the tracking view shows the record without AI labels; the interface language does not corrupt the complaint language. |
@@ -1224,7 +1224,7 @@ These journeys exercise multiple modules in one realistic session. They are the\
 
 1. **Nothing here has been executed.** There are no Pass/Fail results, timings,
    screenshots, or defect IDs yet.
-2. No real Google OAuth, Sarvam, Groq, Cloudinary, SMS, or email credentials
+2. No real Google OAuth, Gnani, Groq, Cloudinary, SMS, or email credentials
    were used. Environment-dependent cases are `Partial`/`Blocked` candidates.
 3. No native-speaker review or WER/CER measurement was performed for Hindi or
    Marathi STT.
@@ -1368,7 +1368,7 @@ To make the P0/P1 cases automatable without weakening security:
   admin-only test endpoint or direct repository fixture, not UI clicking.
 - **Stable selectors:** add `data-testid` to the submit button, mode toggle,
   location search/confirm, photo status, notification badge, and detail dialog.
-- **Controllable external services:** inject fake Sarvam/Cloudinary/LLM
+- **Controllable external services:** inject fake speech-provider/Cloudinary/LLM
   adapters or route interception; never depend on live quotas in CI.
 - **Time control:** short access-token TTL or a clock seam for expiry tests.
 - **Cleanup:** delete synthetic grievances/accounts after each run; do not
@@ -1427,7 +1427,7 @@ record and must be updated after a real run.
 | USR-ACC | 12 | 0 | 0 | 0 | 0 | 12 | Manual keyboard/screen-reader needed |
 | USR-GRV | 20 | 0 | 0 | 0 | 0 | 20 | Cloudinary/geocoder availability to record |
 | USR-AI | 10 | 0 | 0 | 0 | 0 | 10 | Provider-on/off runs needed |
-| USR-VOICE | 20 | 0 | 0 | 0 | 0 | 20 | Microphone/Sarvam or mocks |
+| USR-VOICE | 20 | 0 | 0 | 0 | 0 | 20 | Microphone/speech or mocks |
 | USR-TRACK | 15 | 0 | 0 | 0 | 0 | 15 | Staff fixture needed for transitions |
 | USR-COMM | 10 | 0 | 0 | 0 | 0 | 10 | SMS dry-run only |
 | USR-DASH | 6 | 0 | 0 | 0 | 0 | 6 | |
@@ -1466,7 +1466,7 @@ Feature flags:
 External services available (yes/no + notes):
   Google OAuth:
   Cloudinary:
-  Sarvam:
+  Speech provider:
   Groq/HF:
   SMS provider:
 Cases executed:

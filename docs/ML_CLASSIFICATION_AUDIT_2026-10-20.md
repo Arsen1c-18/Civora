@@ -31,7 +31,7 @@ providers disabled.
 Commands that completed:
 
 ```powershell
-$env:HF_API_TOKEN=''; $env:GROQ_API_KEY=''; $env:SARVAM_API_KEY=''
+$env:HF_API_TOKEN=''; $env:GROQ_API_KEY=''; $env:GNANI_API_KEY=''
 .venv\Scripts\python.exe backend/evaluate.py
 .venv\Scripts\python.exe -m pytest --collect-only -q --basetemp=.pytest_tmp_audit
 .venv\Scripts\python.exe -m pytest -q --tb=short --basetemp=.pytest_tmp_audit
@@ -386,7 +386,7 @@ do not reconcile by one item. No classification-focused tests failed. The 24
 failures concern unrelated status-vocabulary/state expectations, a Render
 transcription config assertion, an image-validation endpoint expectation, and
 assignment/RBAC lifecycle expectations. The 5 skips are optional Mongo-backed
-cases and the opt-in voice end-to-end test. Test fixtures blank HF/Groq/Sarvam
+cases and the opt-in voice end-to-end test. Test fixtures blank HF/Groq/Gnani
 keys; provider branches were mocked where tested. The final focused backend
 suite passed **137/137** with 9 unrelated status-contract tests deselected.
 

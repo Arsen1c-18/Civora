@@ -5,13 +5,15 @@
  * Every question the voice intake can ask is a fixed template, so each one is
  * synthesized ONCE per language and committed under
  * `public/voice/questions/`. At runtime the browser just plays a static file —
- * no TTS call, no credits, and it still works when Sarvam is unreachable.
+ * no TTS call, no provider spend, and it still works when the speech provider
+ * is unreachable.
  *
  * Run manually (never as part of build/test):
- *   SARVAM_API_KEY=... node scripts/generate-question-audio.mjs [--force]
+ *   GNANI_API_KEY=... node scripts/generate-question-audio.mjs [--force]
  *
- * Sarvam TTS (bulbul:v3) is used with a 16 kHz mono WAV output, matching the
- * STT contract so both directions sound consistent. Total one-time spend is
+ * Gnani Timbre TTS (timbre-v2.5) is requested with a 16 kHz mono WAV output
+ * (linear_pcm/wav audio config), matching the STT contract so both directions
+ * sound consistent. Total one-time spend is
  * roughly 2,000 characters across 24 short clips.
  *
  * Text must match the i18n templates in `lib/i18n/voice.ts`; the completeness
@@ -23,8 +25,8 @@ import fs from "node:fs";
 import path from "node:path";
 
 const OUT_DIR = path.join(process.cwd(), "public", "voice", "questions");
-const ENDPOINT = "https://api.sarvam.ai/text-to-speech";
-const MODEL = "bulbul:v3";
+const ENDPOINT = "https://api.vachana.ai/api/v1/tts/inference";
+const MODEL = "timbre-v2.5";
 const FORCE = process.argv.includes("--force");
 
 /** Question text per kind per language. Mirrors lib/i18n/voice.ts. */
@@ -47,7 +49,7 @@ const QUESTIONS = {
     clarify: "क्या थोड़ा और स्पष्ट कर सकते हैं?",
     when: "यह समस्या कब शुरू हुई? लगभग कितने दिन पहले?",
     frequency: "यह हर समय हो रहा है या कभी-कभी? कितनी बार?",
-    affected: "इस समस्या से कौन या क्या प्रभावित है? जैसे कितने घर या लोग?",
+    affected: "इस समस्ये से कौन या क्या प्रभावित है? जैसे कितने घर या लोग?",
     danger: "क्या इससे किसी को खतरा है? जैसे स्कूल के पास है या तार खुले हैं?",
     landmark: "यह किस जानी-मानी जगह के सबसे नज़दीक है? लैंडमार्क से टीम को ढूँढने में मदद मिलेगी।",
   },
@@ -64,12 +66,12 @@ const QUESTIONS = {
   },
 };
 
-/** Speaker per language (bulbul:v3 voice names; all support these locales). */
-const SPEAKERS = { "en-IN": "shubh", "hi-IN": "shubh", "mr-IN": "shubh" };
+/** Voice per language (timbre-v2.5 voice names, mirroring backend speech.py). */
+const VOICES = { "en-IN": "Kaveri", "hi-IN": "Nalini", "mr-IN": "Zahira" };
 
-const apiKey = process.env.SARVAM_API_KEY;
+const apiKey = process.env.GNANI_API_KEY;
 if (!apiKey) {
-  console.error("SARVAM_API_KEY is required (set it inline; never commit it).");
+  console.error("GNANI_API_KEY is required (set it inline; never commit it).");
   process.exit(1);
 }
 
@@ -87,27 +89,31 @@ for (const [language, kinds] of Object.entries(QUESTIONS)) {
     }
     const response = await fetch(ENDPOINT, {
       method: "POST",
-      headers: { "api-subscription-key": apiKey, "Content-Type": "application/json" },
+      headers: { "X-API-Key-ID": apiKey, "Content-Type": "application/json" },
       body: JSON.stringify({
         text,
-        language_code: language,
-        speaker: SPEAKERS[language],
+        voice: VOICES[language],
         model: MODEL,
-        output_audio_codec: "wav",
-        speech_sample_rate: 16000,
+        language,
+        audio_config: {
+          encoding: "linear_pcm",
+          container: "wav",
+          num_channels: 1,
+          sample_rate: 16000,
+          sample_width: 2,
+        },
       }),
     });
     if (!response.ok) {
       console.error(`${kind}.${language}: HTTP ${response.status} ${await response.text()}`);
       process.exit(1);
     }
-    const payload = await response.json();
-    const audio = Array.isArray(payload?.audios) ? payload.audios[0] : null;
-    if (typeof audio !== "string" || !audio) {
+    const contentType = response.headers.get("content-type") ?? "";
+    if (!contentType.includes("audio/")) {
       console.error(`${kind}.${language}: provider returned no audio`);
       process.exit(1);
     }
-    fs.writeFileSync(file, Buffer.from(audio, "base64"));
+    fs.writeFileSync(file, Buffer.from(await response.arrayBuffer()));
     generated += 1;
     console.log(`${path.relative(process.cwd(), file)}  ${(fs.statSync(file).size / 1024).toFixed(1)} kB`);
   }
