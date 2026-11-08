@@ -137,7 +137,7 @@ require DLT, but Trial can only deliver to the verified number ending `7009`. Fo
 DLT route: register the Principal Entity, 6-character sender header, and the
 stage/OTP templates, then add the Indian sender to the Messaging Service. The
 `DLT_*` variables are traceability only; Twilio's console registration is what
-enables domestic delivery. The OTP body now says **SAMARTH** — register that
+enables domestic delivery. The OTP body says **CIVORA** — register that
 exact text when DLT starts.
 
 Watch the 160 GSM-7 character cap: over-long stage bodies are skipped, and
