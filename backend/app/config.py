@@ -81,10 +81,7 @@ SEED_TEST_ACCOUNTS = os.getenv("SEED_TEST_ACCOUNTS", "false").lower() == "true"
 # Shared dev password for the per-department test accounts. Empty means the
 # documented built-in defaults are used (see seed_test_accounts.py / README).
 SEED_TEST_PASSWORD = os.getenv("SEED_TEST_PASSWORD", "")
-# Google OAuth (optional)
-GOOGLE_CLIENT_ID = os.getenv("GOOGLE_CLIENT_ID", "")
-GOOGLE_CLIENT_SECRET = os.getenv("GOOGLE_CLIENT_SECRET", "")
-# URL where the Next.js frontend is hosted (used for OAuth redirects)
+# URL where the Next.js frontend is hosted (used for CORS and frontend redirects)
 FRONTEND_URL = os.getenv("FRONTEND_URL", "http://localhost:3000").rstrip("/")
 
 # --- Face authentication (opt-in; DEC-024) ----------------------------------
