@@ -28,6 +28,7 @@ import math
 import statistics
 import time
 from dataclasses import dataclass, field
+from pathlib import Path
 
 import numpy as np
 
@@ -421,6 +422,8 @@ _antispoof_session: dict = {"path": None, "session": None}
 
 def _antispoof_score(img: np.ndarray) -> float:
     """Passive Silent-Face score in [0, 1]; 1.0 when the check is disabled."""
+    if not config.FACE_AUTH_ENABLED:
+        return 1.0
     path = config.FACE_ANTISPOOF_MODEL_PATH
     if not path:
         return 1.0
@@ -468,43 +471,118 @@ def _antispoof_score(img: np.ndarray) -> float:
 
 import threading as _threading
 
+REQUIRED_FACE_MODELS = ("det_500m.onnx", "2d106det.onnx", "w600k_mbf.onnx")
+
 _ANALYZERS: dict[str, object] = {}
+_ANALYZER_ERRORS: dict[str, FaceAuthError] = {}
 _ANALYZER_LOCK = _threading.Lock()
 
 
+def reset_analyzer_cache() -> None:
+    """Clear cached analyzer instances and errors (primarily for tests)."""
+    with _ANALYZER_LOCK:
+        _ANALYZERS.clear()
+        _ANALYZER_ERRORS.clear()
+
+
+def is_analyzer_initialized() -> bool:
+    """Return whether the face analyzer singleton is currently loaded in memory."""
+    name = config.FACE_MODEL_NAME
+    return name in _ANALYZERS
+
+
 def _get_analyzer():
-    """Lazy singleton FaceAnalysis for the configured model pack."""
+    """Lazy singleton FaceAnalysis for the configured model pack.
+
+    Initializes on-demand only when face authentication is requested.
+    If FACE_AUTH_ENABLED=false, access is completely blocked without touching models.
+    Checks that model weights exist locally before prepare() runs, completely
+    preventing InsightFace from attempting network downloads during request serving.
+    Caches the analyzer instance or error safely under a thread lock.
+    """
+    if not config.FACE_AUTH_ENABLED:
+        logger.info("Face analyzer access blocked: FACE_AUTH_ENABLED is false")
+        raise FaceAuthError("SERVICE_UNAVAILABLE", "face authentication is disabled")
+
     name = config.FACE_MODEL_NAME
     cached = _ANALYZERS.get(name)
     if cached is not None:
         return cached
+
+    cached_err = _ANALYZER_ERRORS.get(name)
+    if cached_err is not None:
+        raise FaceAuthError(cached_err.code, cached_err.message)
+
     with _ANALYZER_LOCK:
         cached = _ANALYZERS.get(name)
         if cached is not None:
             return cached
+
+        cached_err = _ANALYZER_ERRORS.get(name)
+        if cached_err is not None:
+            raise FaceAuthError(cached_err.code, cached_err.message)
+
         try:
             from insightface.app import FaceAnalysis
+        except (ImportError, ModuleNotFoundError) as exc:
+            logger.warning("InsightFace dependency is not installed: %s", exc)
+            err = FaceAuthError("SERVICE_UNAVAILABLE", "face authentication dependencies are not installed")
+            _ANALYZER_ERRORS[name] = err
+            raise err
         except Exception as exc:
-            logger.error("insightface unavailable: %s", exc)
-            raise FaceAuthError("SERVICE_UNAVAILABLE", "face model is not installed") from exc
+            logger.error("Failed to import InsightFace: %s", exc)
+            err = FaceAuthError("SERVICE_UNAVAILABLE", "face model is not installed")
+            _ANALYZER_ERRORS[name] = err
+            raise err
+
         try:
             import onnxruntime as ort
+        except (ImportError, ModuleNotFoundError) as exc:
+            logger.warning("onnxruntime dependency is not installed: %s", exc)
+            err = FaceAuthError("SERVICE_UNAVAILABLE", "onnxruntime is not installed")
+            _ANALYZER_ERRORS[name] = err
+            raise err
 
+        # Prevent automatic model downloads: verify local model weights exist before prepare()
+        model_root = Path(config.FACE_MODEL_ROOT).expanduser()
+        model_dir = model_root / "models" / name
+        if not model_dir.is_dir():
+            logger.warning("Face model directory not found at: %s", model_dir)
+            err = FaceAuthError("SERVICE_UNAVAILABLE", f"face model weights not found at {model_dir}")
+            _ANALYZER_ERRORS[name] = err
+            raise err
+
+        missing_models = [m for m in REQUIRED_FACE_MODELS if not (model_dir / m).is_file()]
+        if missing_models:
+            logger.warning("Face model weights missing at %s: %s", model_dir, missing_models)
+            err = FaceAuthError("SERVICE_UNAVAILABLE", f"face model weights missing: {', '.join(missing_models)}")
+            _ANALYZER_ERRORS[name] = err
+            raise err
+
+        try:
             opts = ort.SessionOptions()
             opts.intra_op_num_threads = config.FACE_ORT_THREADS
+            opts.inter_op_num_threads = 1
+            if hasattr(opts, "enable_cpu_mem_arena"):
+                opts.enable_cpu_mem_arena = False
 
             analyzer = FaceAnalysis(
                 name=name,
-                root=config.FACE_MODEL_ROOT,
+                root=str(model_root),
                 allowed_modules=["detection", "landmark_2d_106", "recognition"],
                 providers=["CPUExecutionProvider"],
                 sess_options=opts,
             )
             det_size = max(320, config.FACE_DET_SIZE)
             analyzer.prepare(ctx_id=-1, det_size=(det_size, det_size))
+        except FaceAuthError:
+            raise
         except Exception as exc:
-            logger.exception("failed to load face model %r", name)
-            raise FaceAuthError("SERVICE_UNAVAILABLE", "face model failed to load") from exc
+            logger.exception("failed to load face model %r: %s", name, exc)
+            err = FaceAuthError("SERVICE_UNAVAILABLE", "face model failed to load")
+            _ANALYZER_ERRORS[name] = err
+            raise err
+
         _ANALYZERS[name] = analyzer
         logger.info(
             "Face model loaded: %s (root=%s, det_size=%d, threads=%d, "

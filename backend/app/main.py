@@ -207,46 +207,30 @@ app.include_router(analytics_router.router)
 # ── Startup ───────────────────────────────────────────────────────────────────
 @app.on_event("startup")
 def _validate_face_auth() -> None:
-    """Fail fast when face auth is enabled but unusable (DEC-024).
+    """Validate face auth configuration and log startup status (DEC-024, DEC-038).
 
-    validate_embed_key raises ValueError (missing/invalid FACE_EMBED_KEY) and
-    uvicorn aborts startup instead of serving a flag-on API that would fail
-    every enrollment at runtime.
+    validate_embed_key raises ValueError (missing/invalid FACE_EMBED_KEY) when enabled.
+    Startup logs clearly record whether face authentication is enabled and whether
+    its model has been initialized.
     """
     from . import config as _config
 
     if not _config.FACE_AUTH_ENABLED:
+        logger.info(
+            "[STARTUP] Face authentication: DISABLED (FACE_AUTH_ENABLED=false). "
+            "No face models, ONNX Runtime sessions, or model weights will be loaded."
+        )
         return
-    from .services.face_service import validate_embed_key
+
+    from .services.face_service import is_analyzer_initialized, validate_embed_key
 
     validate_embed_key()
-
-
-@app.on_event("startup")
-def _warmup_face_auth() -> None:
-    """Preload the face model in a background thread when enabled (DEC-024).
-
-    Avoids latency spikes on the first user request while preserving the lazy
-    fallback if warmup fails or is still finishing.
-    """
-    from . import config as _config
-
-    if not _config.FACE_AUTH_ENABLED:
-        return
-
-    import threading
-    from .services.face_service import _get_analyzer
-
-    def _warmup() -> None:
-        try:
-            logger.info("Preloading face model in background thread: %s", _config.FACE_MODEL_NAME)
-            _get_analyzer()
-            logger.info("Face model background preload complete: %s", _config.FACE_MODEL_NAME)
-        except Exception:
-            logger.exception("Face model background preload failed; lazy fallback active")
-
-    t = threading.Thread(target=_warmup, name="face-model-warmup", daemon=True)
-    t.start()
+    logger.info(
+        "[STARTUP] Face authentication: ENABLED (FACE_AUTH_ENABLED=true). "
+        "Model pack: '%s'. Status: lazy initialization on request (loaded: %s).",
+        _config.FACE_MODEL_NAME,
+        is_analyzer_initialized(),
+    )
 
 
 @app.on_event("startup")
