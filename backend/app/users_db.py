@@ -68,7 +68,7 @@ class InMemoryUsersRepository:
         doc.setdefault("phone", None)
         doc.setdefault("citizen_id", None)
         doc.setdefault("hashed_password", None)
-        doc.setdefault("auth_method", "google" if doc.get("google_id") else "password")
+        doc.setdefault("auth_method", "password")
         return doc
 
     def create(self, doc: dict[str, Any]) -> str:
@@ -106,7 +106,7 @@ class InMemoryUsersRepository:
 
         payload.setdefault(
             "auth_method",
-            "face_only" if payload.get("auth_method") == "face_only" else ("google" if payload.get("google_id") else "password"),
+            "face_only" if payload.get("auth_method") == "face_only" else "password",
         )
 
         self._seq += 1
@@ -305,7 +305,7 @@ class MongoUsersRepository:
         doc.setdefault("phone", None)
         doc.setdefault("citizen_id", None)
         doc.setdefault("hashed_password", None)
-        doc.setdefault("auth_method", "google" if doc.get("google_id") else "password")
+        doc.setdefault("auth_method", "password")
         return doc
 
     def create(self, doc: dict[str, Any]) -> str:
@@ -331,7 +331,7 @@ class MongoUsersRepository:
 
         payload.setdefault(
             "auth_method",
-            "face_only" if payload.get("auth_method") == "face_only" else ("google" if payload.get("google_id") else "password"),
+            "face_only" if payload.get("auth_method") == "face_only" else "password",
         )
 
         result = self._col.insert_one(payload)

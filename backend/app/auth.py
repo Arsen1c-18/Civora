@@ -149,7 +149,7 @@ def get_pending_user(
 
     Raises 401 when missing/expired/invalid or of any other token type —
     full access tokens are rejected here on purpose (the pending flow must be
-    started by password/Google login, not reused from an established session).
+    started by password login, not reused from an established session).
     """
     if not creds:
         raise HTTPException(status_code=401, detail="Not authenticated")

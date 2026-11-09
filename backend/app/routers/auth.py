@@ -1,14 +1,10 @@
 """Authentication endpoints.
 
 POST  /auth/register       — create a new USER account
-POST  /auth/login          — email + password → access + refresh tokensPOST  /auth/refresh        — exchange a refresh token for a new access token
+POST  /auth/login          — email + password → access + refresh tokens
+POST  /auth/refresh        — exchange a refresh token for a new access token
 POST  /auth/logout         — (client-side: discard tokens; server is stateless)
 GET   /auth/me             — get the current user's profile
-GET   /auth/google         — redirect to Google OAuth consent screen
-GET   /auth/google/callback — exchange code for user; issue tokens
-
-Google OAuth is optional: if GOOGLE_CLIENT_ID / GOOGLE_CLIENT_SECRET are not
-set the /auth/google routes return 503 rather than crashing.
 """
 
 from __future__ import annotations
@@ -57,9 +53,6 @@ def _verify_password(plain: str, hashed: str) -> bool:
         return False
 
 
-# Google OAuth settings — optional
-_GOOGLE_CLIENT_ID = os.getenv("GOOGLE_CLIENT_ID", "")
-_GOOGLE_CLIENT_SECRET = os.getenv("GOOGLE_CLIENT_SECRET", "")
 _FRONTEND_URL = os.getenv("FRONTEND_URL", "http://localhost:3000").rstrip("/")
 
 
@@ -180,7 +173,7 @@ def _face_step_required(user: dict) -> bool:
     Superadmin is always exempt from 2FA (DEC-052).
     The decision reads only the verify-second-factor counter
     (`face:fail:user:<id>`) — a public /auth/face/login lockout can never
-    influence password/Google login, and vice versa.
+    influence password login, and vice versa.
     """
     if not config.FACE_AUTH_ENABLED:
         return False
@@ -253,7 +246,7 @@ def login(payload: LoginRequest):
     When face auth is enabled and a privileged account has opted into the
     extra face step (enrolled + `requireLogin2fa`, not currently locked out
     of the face endpoint), the response is a short-lived pending token
-    instead — password/Google login itself always succeeds.
+    instead — password login itself always succeeds.
     """
     user = users_repository.find_by_email(payload.email)
     if (
@@ -395,139 +388,3 @@ def me(current: Annotated[dict, Depends(get_current_user)]):
         raise HTTPException(status_code=404, detail="User not found")
     return _user_to_profile(user)
 
-
-# ── Google OAuth ─────────────────────────────────────────────────────────────
-
-def _require_google():
-    if not _GOOGLE_CLIENT_ID or not _GOOGLE_CLIENT_SECRET:
-        raise HTTPException(
-            status_code=503,
-            detail="Google OAuth is not configured (GOOGLE_CLIENT_ID / GOOGLE_CLIENT_SECRET missing)",
-        )
-
-
-@router.get("/google")
-def google_redirect(request: Request):
-    """Redirect the browser to Google's OAuth consent screen."""
-    _require_google()
-
-    state = secrets.token_urlsafe(32)
-    # Store state in session cookie for CSRF validation (simplistic; production
-    # should use a signed cookie or a Redis-backed nonce store).
-    redirect_uri = str(request.url_for("google_callback"))
-    params = (
-        "https://accounts.google.com/o/oauth2/v2/auth"
-        f"?client_id={_GOOGLE_CLIENT_ID}"
-        f"&redirect_uri={redirect_uri}"
-        f"&response_type=code"
-        f"&scope=openid%20email%20profile"
-        f"&state={state}"
-        f"&access_type=offline"
-        f"&prompt=consent"
-    )
-    response = RedirectResponse(url=params)
-    response.set_cookie("oauth_state", state, httponly=True, samesite="lax", max_age=600)
-    return response
-
-
-@router.get("/google/callback", name="google_callback")
-def google_callback(request: Request, code: str = "", state: str = "", error: str = ""):
-    """Exchange Google authorization code for a user account and issue tokens."""
-    _require_google()
-
-    if error:
-        return RedirectResponse(url=f"{_FRONTEND_URL}/login?error=google_denied")
-
-    stored_state = request.cookies.get("oauth_state", "")
-    if not state or state != stored_state:
-        return RedirectResponse(url=f"{_FRONTEND_URL}/login?error=invalid_state")
-
-    import httpx  # noqa: PLC0415 — local import keeps startup fast
-
-    # Exchange code for tokens
-    redirect_uri = str(request.url_for("google_callback"))
-    token_resp = httpx.post(
-        "https://oauth2.googleapis.com/token",
-        data={
-            "client_id": _GOOGLE_CLIENT_ID,
-            "client_secret": _GOOGLE_CLIENT_SECRET,
-            "code": code,
-            "grant_type": "authorization_code",
-            "redirect_uri": redirect_uri,
-        },
-        timeout=10,
-    )
-    if not token_resp.is_success:
-        logger.error("Google token exchange failed: %s", token_resp.text)
-        return RedirectResponse(url=f"{_FRONTEND_URL}/login?error=google_token_failed")
-
-    google_tokens = token_resp.json()
-    id_token_str = google_tokens.get("id_token", "")
-    if not id_token_str:
-        return RedirectResponse(url=f"{_FRONTEND_URL}/login?error=no_id_token")
-
-    # Decode the Google ID token (verify with Google's public keys in production;
-    # for the prototype we do a lightweight decode without signature check since
-    # we just exchanged it ourselves from Google's endpoint).
-    import base64, json as _json  # noqa: PLC0415
-
-    try:
-        parts = id_token_str.split(".")
-        payload_b64 = parts[1] + "=="  # re-pad
-        decoded = _json.loads(base64.urlsafe_b64decode(payload_b64))
-        google_email = decoded.get("email", "")
-        google_name = decoded.get("name", "")
-        google_sub = decoded.get("sub", "")
-        avatar_url = decoded.get("picture", "")
-    except Exception as exc:
-        logger.exception("Failed to decode Google ID token: %s", exc)
-        return RedirectResponse(url=f"{_FRONTEND_URL}/login?error=id_token_decode")
-
-    if not google_email:
-        return RedirectResponse(url=f"{_FRONTEND_URL}/login?error=no_email")
-
-    # Find or create the user
-    user = users_repository.find_by_email(google_email)
-    if user and user.get("auth_method") == "face_only":
-        return RedirectResponse(url=f"{_FRONTEND_URL}/login?error=invalid_credentials")
-    if not user:
-        uid = users_repository.create({
-            "email": google_email.lower(),
-            "full_name": google_name,
-            "hashed_password": "",  # no password for OAuth users
-            "role": "USER",
-            "google_id": google_sub,
-            "avatar_url": avatar_url,
-        })
-        user = users_repository.get(uid)
-    else:
-        # Update avatar / google_id on existing account
-        users_repository.update(user["id"], {"google_id": google_sub, "avatar_url": avatar_url})
-        user = users_repository.get(user["id"])
-
-    access_token = create_access_token(user["id"], user["role"], user["email"], user.get("departmentId"))
-    refresh_token = create_refresh_token(user["id"])
-
-    # Optional face step for privileged accounts that opted in (DEC-024):
-    # redirect with a pending token instead of the full pair.
-    if _face_step_required(user):
-        pending_token = create_pending_token(
-            user["id"], user["role"], user["email"], user.get("departmentId")
-        )
-        return RedirectResponse(
-            url=(
-                f"{_FRONTEND_URL}/auth/callback"
-                f"?two_factor=face&pending_token={pending_token}"
-            )
-        )
-
-    # Redirect back to the frontend with tokens in the query string.
-    # In production prefer setting httpOnly cookies or using a code-for-token
-    # exchange flow — this is acceptable for the prototype.
-    return RedirectResponse(
-        url=(
-            f"{_FRONTEND_URL}/auth/callback"
-            f"?access_token={access_token}"
-            f"&refresh_token={refresh_token}"
-        )
-    )

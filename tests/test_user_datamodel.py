@@ -4,9 +4,9 @@ Covers:
   - Allowing email = null and password_hash = null.
   - phone (normalized E.164, unique, sparse index).
   - citizen_id (CIT-<8 digits>, unique, generated server-side with collision retry).
-  - auth_method = "face_only" | "password" | "google".
+  - auth_method = "face_only" | "password".
   - Existing users and flows unchanged.
-  - Password and Google login for a face_only user returns the same generic failure.
+  - Password login for a face_only user returns the same generic failure.
   - In-memory repository index behaviors.
 """
 

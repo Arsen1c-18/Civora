@@ -20,8 +20,8 @@ Security rules (DEC-024):
   * /login and /verify-second-factor failures always answer the generic
     401 "Face sign-in failed" - no enumeration by status, body or timing:
     the frame pipeline runs before the account-specific outcome.
-  * lockout (429) is enforced on these face endpoints only; password and
-    Google login are never blocked by it (routers/auth.py reads only the
+  * lockout (429) is enforced on these face endpoints only; password
+    login is never blocked by it (routers/auth.py reads only the
     per-user verify-second-factor counter for its skip rule).
   * counters (15-minute windows): /login -> 20 per IP + 5 per email
     (USER/RESOLVER subjects only); /verify-second-factor -> 5 per user,
@@ -892,7 +892,7 @@ def verify_second_factor(
     request: Request,
     pending: Annotated[dict, Depends(get_pending_user)],
 ):
-    """Optional face step after a privileged password/Google login.
+    """Optional face step after a privileged password login.
 
     The pending token dependency rejects everything else (including full
     access tokens), so unauthenticated callers can never burn the per-user
