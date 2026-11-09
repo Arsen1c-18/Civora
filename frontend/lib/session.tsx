@@ -56,26 +56,34 @@ interface Session {
 const DemoUserContext = createContext<Session | null>(null);
 
 export function DemoUserProvider({ children }: { children: ReactNode }) {
-  // Synchronous initialization from localStorage so the client never flickers
-  // to an unauthenticated "Sign in" state on reload or navigation (DEC-050).
-  const [user, setUser] = useState<AuthUser | null>(() => {
-    if (typeof window === "undefined") return null;
-    try {
-      const raw = localStorage.getItem(STORAGE_KEY);
-      if (raw) return JSON.parse(raw);
-    } catch {
-      return null;
-    }
-    return null;
-  });
-  const [isLoading, setIsLoading] = useState(() => {
-    if (typeof window === "undefined") return true;
-    return !localStorage.getItem(STORAGE_KEY);
-  });
+  // Start with null on SSR and initial client hydration to prevent hydration mismatch.
+  // The cached session from localStorage is restored immediately on mount.
+  const [user, setUser] = useState<AuthUser | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
   const liveMode = !useMocks();
 
   useEffect(() => {
     let isMounted = true;
+
+    // Fast local restore from cache first (no network wait)
+    try {
+      const raw = localStorage.getItem(STORAGE_KEY);
+      if (raw) {
+        const cached = JSON.parse(raw) as AuthUser;
+        if (isMounted) {
+          setUser(cached);
+          setIsLoading(false);
+        }
+      } else {
+        if (isMounted) {
+          setIsLoading(false);
+        }
+      }
+    } catch {
+      if (isMounted) {
+        setIsLoading(false);
+      }
+    }
 
     async function initSession() {
       if (liveMode) {
