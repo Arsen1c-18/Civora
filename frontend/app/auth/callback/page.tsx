@@ -21,7 +21,7 @@ function CallbackHandler() {
         return;
       }
 
-      // Privileged Google login paused for the optional face step (DEC-024):
+      // Privileged login paused for the optional face step (DEC-024):
       // stash the pending token (own key, never auto-attached) and let the
       // login page open the 2FA screen. A pending token never becomes a
       // session by itself.

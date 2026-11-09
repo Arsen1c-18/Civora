@@ -693,10 +693,6 @@ export function updateSmsConsent(enabled: boolean): Promise<{ smsConsent: boolea
   return requestJson("/phone/consent", { method: "PATCH", body: JSON.stringify({ enabled }) });
 }
 
-export function getGoogleAuthUrl(): string {
-  return `${API_URL}/auth/google`;
-}
-
 /* ── Face authentication (feature flag: FACE_AUTH_ENABLED, DEC-024) ───────── */
 
 export const FACE_REQUEST_TIMEOUT_MS = 60_000;
