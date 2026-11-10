@@ -2,31 +2,66 @@
 
 **AI-Powered Grievance Redressal & Management Platform** — Every grievance deserves a resolution.
 
+**Live deployment:** [civora-public-grievance.vercel.app](https://civora-public-grievance.vercel.app) · [API status](https://grievance-ai-backend-04tv.onrender.com/health) · [Interactive API documentation](https://grievance-ai-backend-04tv.onrender.com/docs)
+
 CIVORA is a web-based grievance redressal and management platform for civic
-complaints. It combines a citizen-facing complaint portal with role-based
-staff workflows, department analytics, and AI-assisted triage. It is an
-independent system, not an official government service or a national
-grievance portal.
+complaints. Citizens can file a complaint by speaking as well as typing, and
+staff run a role-based workflow with department analytics, maps, and
+AI-assisted triage. It is an independent system, not an official government
+service or a national grievance portal.
 
 AI outputs are advisory. Authorized people make the final decisions about
 department routing, employee assignment, escalation, resolution approval, and
 closure.
 
-## Optional Gnani speech support
+## Why CIVORA exists — and why filing starts with voice
 
-The existing voice-assisted draft flow can use Gnani Prisma for explicit,
-short recording transcription. Citizens review the transcript before sending
-it through the normal grievance submission path. Optional Gnani Timbre audio
-plays only when a citizen presses a speaker control; text remains available
-if speech services are disabled. Configure backend-only `GNANI_API_KEY` and
-feature flags as documented in [docs/VOICE_ASSISTED_COMPLAINT.md](docs/VOICE_ASSISTED_COMPLAINT.md).
-Evon is not currently integrated.
+Most civic complaints are reported by people standing in front of the
+problem, on a phone, often in a language they speak rather than write. Long
+text forms lose exactly those reports. CIVORA makes spoken complaint filing
+the primary drafting experience: citizens describe what happened in their own
+words, the platform turns speech into a structured written grievance, and the
+citizen reviews and approves every word before it enters the audited
+workflow. English, Hindi, and Marathi are offered today, and the
+transcription service itself understands ten Indian languages.
+
+## Voice-first filing with Gnani
+
+The voice experience runs on Gnani's speech models:
+
+- **Speech to text — Gnani Prisma v3.0.** The guided intake asks short,
+  bounded questions, and the citizen records explicitly, turn by turn.
+  Recordings are sent to Prisma as 16 kHz mono WAV and return a transcript
+  plus the detected language. The transcript lands in an editable field: the
+  citizen reviews, edits, or retakes it, then submits through the normal
+  grievance path. Nothing from a recording is submitted automatically.
+- **Text to speech — Gnani Timbre.** Intake questions play from
+  pre-recorded clips, and any dynamic spoken answer plays only when the
+  citizen presses a speaker control. The same content is always available as
+  text, so the workflow never depends on audio.
+- **Trust guardrails.** Per-user reservation quotas and independent provider
+  budgets guard every live call; requests run with bounded timeouts and
+  response-size caps; provider errors are sanitized; and every call is
+  usage-logged so speech spend and speech activity stay auditable.
+- **Coverage.** Prisma covers ten Indian languages — Bangla, English,
+  Gujarati, Hindi, Kannada, Malayalam, Marathi, Punjabi, Tamil, Telugu —
+  which keeps wider regional-language intake on the product roadmap without
+  a UI redesign.
+
+Gnani Evon (LLM) is not integrated. Classification runs locally inside the
+backend as described under [AI status and known
+limitations](#ai-status-and-known-limitations).
+
+Configuration is backend-only: set `GNANI_API_KEY` and enable
+`GNANI_PRISMA_ENABLED` / `GNANI_TIMBRE_ENABLED`. The full API contract, env
+reference, and flow guide are in
+[docs/VOICE_ASSISTED_COMPLAINT.md](docs/VOICE_ASSISTED_COMPLAINT.md).
 
 ## What the system supports
 
 | Role | Main capabilities |
 |---|---|
-| Citizen (`USER`) | Register and sign in; submit a complaint with a location and optional attachments; track personal complaints; receive in-app updates. |
+| Citizen (`USER`) | Register and sign in; submit a complaint spoken or typed, with a location and optional attachments; track personal complaints; receive in-app updates. |
 | Global administrator (`ADMIN`, without a department) | Review and route grievances, oversee queues, view analytics and maps, and manage platform work. |
 | Department manager (`ADMIN`, with a department) | Work within the assigned department, allocate its grievances to employees, and manage department employee accounts. |
 | Employee (`RESOLVER`) | View assigned work, acknowledge and progress tasks, add updates, raise issues, and submit work for manager review. |
@@ -39,6 +74,10 @@ employees autonomously.
 
 ### Main features
 
+- Voice-first complaint drafting: guided spoken intake with Gnani Prisma
+  transcription, an editable citizen-reviewed transcript, and Gnani Timbre
+  spoken answers. The typed form remains available as the fallback when a
+  deployment does not enable speech.
 - Complaint registration requires a signed-in citizen. The form supports a
   self-location and an optional incident location, a map picker, and optional
   image evidence.
@@ -52,9 +91,6 @@ employees autonomously.
 - The citizen UI currently offers English, Hindi, and Marathi. Eight additional
   language packs are present in the source but are not offered in the language
   picker; native-language review is still needed.
-- Voice-assisted complaint drafting is available behind a backend feature
-  flag. Transcription is disabled by default. Citizens review and edit the
-  transcript before submitting a complaint.
 
 ## Technology
 
@@ -63,13 +99,14 @@ employees autonomously.
 | Frontend | Next.js 16 App Router, React 19, TypeScript, Tailwind CSS 4 |
 | Backend | Python 3.11+, FastAPI, Pydantic, Uvicorn |
 | Persistence | MongoDB through PyMongo; process-local in-memory fallback when `MONGODB_URI` is empty |
-| Authentication | JWT sessions and server-side role checks; Google OAuth is optional |
+| Authentication | JWT sessions, optional phone-number binding with OTP verification, and server-side role checks; optional face sign-in |
+| Speech AI | Gnani Prisma v3.0 speech-to-text (ten Indian languages) and Gnani Timbre text-to-speech |
 | Mapping and charts | Leaflet and Recharts |
 | AI and text analysis | Local scikit-learn classification and keyword rules; optional Hugging Face and Groq provider fallbacks |
-| Optional services | Cloudinary uploads, Gnani Prisma/Timbre speech, face authentication, and Twilio SMS |
+| Optional services | Cloudinary image uploads and Twilio SMS notifications |
 
-The frontend calls the FastAPI REST API. AI and classification services run
-inside the backend; there is no separate AI microservice.
+The frontend calls the FastAPI REST API. AI, classification, and speech
+services run inside the backend; there is no separate AI microservice.
 
 ```mermaid
 flowchart LR
@@ -77,7 +114,8 @@ flowchart LR
     Web -->|REST and JWT| API[FastAPI backend]
     API --> Store[(MongoDB or in-memory store)]
     API --> NLP[Local classification and rules]
-    API -. optional .-> Providers[Groq, Hugging Face, Gnani Prisma and Timbre, Cloudinary]
+    API --> Speech[Gnani Prisma STT and Gnani Timbre TTS]
+    API -. optional .-> Providers[Groq, Hugging Face, Cloudinary, Twilio]
 ```
 
 ## Repository map
@@ -93,7 +131,6 @@ frontend/public/   Static assets, including demo grievance images and voice prom
 tests/             Backend API, RBAC, repository, AI, and feature tests
 tools/             Data maintenance utilities
 docs/              Architecture, API, database, security, workflow, and AI guides
-memory/            Project state, decisions, and agent handoff history
 ```
 
 ## Requirements
@@ -199,13 +236,18 @@ npm run dev
 Open `http://localhost:3000`. Restart the frontend after changing any
 `NEXT_PUBLIC_*` setting.
 
+To exercise the voice-first intake locally, set `GNANI_API_KEY` and
+`GNANI_PRISMA_ENABLED=true` in `backend/.env` (and
+`GNANI_TIMBRE_ENABLED=true` for spoken answers). Without them the guided
+intake runs on typed entry only.
+
 ### Useful routes
 
 | Route | Purpose |
 |---|---|
 | `/` | Public home and dashboard |
 | `/login` and `/register` | Sign in and citizen account registration |
-| `/submit` | Authenticated citizen complaint form |
+| `/submit` | Authenticated citizen complaint form, with voice-first drafting |
 | `/track` | Signed-in citizen grievance tracking |
 | `/notifications` | Account notification inbox |
 | `/admin` | Administrator overview and grievance queue |
@@ -260,21 +302,22 @@ frontend's `/demo-assets` URL before seeding. Do not point the seeder at a
 production or shared evaluation database unless adding these records is
 intentional.
 
-## Optional integrations
+## Service configuration
 
-Most core workflows run without external AI services. Configure optional keys
-in `backend/.env` only when testing the corresponding feature:
+Core workflows run without external AI services. Voice drafting runs on the
+Gnani speech service and is enabled by configuration; everything else in this
+table is optional per deployment. Configure backend values in `backend/.env`
+or the hosting dashboard only when using the corresponding feature:
 
 | Setting | Purpose | Default behavior |
 |---|---|---|
+| `GNANI_API_KEY`, `GNANI_PRISMA_ENABLED` | Gnani Prisma voice transcription for the voice-first intake | Voice drafting is unavailable until configured; the typed form works unchanged |
+| `GNANI_API_KEY`, `GNANI_TIMBRE_ENABLED` | Gnani Timbre spoken output for speaker controls | Speaker controls are unavailable until configured; the same content stays available as text |
 | `GROQ_API_KEY` | Optional classification and quality-check fallback | Local rules/classifier remain available without it |
 | `HF_API_TOKEN` | Optional Hugging Face classification fallback | Not required for startup |
 | `CLOUDINARY_CLOUD_NAME`, `CLOUDINARY_API_KEY`, `CLOUDINARY_API_SECRET` | Backend Cloudinary account for signed URLs and asset deletion | Set on backend only; API secret must remain private |
 | `NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME`, `NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET` | Frontend direct image uploads | Must use the same cloud name; preset must be unsigned |
-| `GNANI_API_KEY`, `GNANI_PRISMA_ENABLED` | Gnani Prisma voice transcription | Disabled by default; authenticated draft transcription, WAV only in current UI |
-| `GNANI_API_KEY`, `GNANI_TIMBRE_ENABLED` | Gnani Timbre spoken output | Disabled by default; speaker buttons only, gracefully falls back to text |
 | `FACE_AUTH_ENABLED`, `FACE_EMBED_KEY` | Optional face sign-in | Disabled by default; also requires `backend/requirements-face.txt` and model setup |
-| `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET` | Google OAuth | Google sign-in is unavailable until configured |
 | `SMS_PROVIDER` and `TWILIO_*` | SMS notifications | Dry-run/off unless configured |
 
 Never put provider secrets in frontend `NEXT_PUBLIC_*` variables or commit them
@@ -311,6 +354,9 @@ validation evidence.
 
 ## AI status and known limitations
 
+- Voice intake transcription quality depends on the Gnani Prisma service; the
+  platform has not independently evaluated transcription accuracy on real
+  complaint audio.
 - Category classification is an early-stage cascade using a local
   word/character model, deterministic rules, and optional provider fallbacks.
   It is experimental and must not be treated as validated accuracy.
@@ -326,14 +372,30 @@ validation evidence.
 
 ## Deployment
 
+The public deployment runs the Next.js frontend on Vercel and the FastAPI
+backend on Render, with MongoDB Atlas:
+
+| Component | Live URL |
+|---|---|
+| Frontend | https://civora-public-grievance.vercel.app |
+| Backend API | https://grievance-ai-backend-04tv.onrender.com |
+| API documentation | https://grievance-ai-backend-04tv.onrender.com/docs |
+
 `render.yaml` defines the FastAPI backend service. Deploy the Next.js frontend
-separately and configure its `NEXT_PUBLIC_API_URL` to the deployed backend.
-Configure MongoDB, a strong `JWT_SECRET_KEY`, exact `CORS_ORIGINS`, and
-`FRONTEND_URL` in the hosting provider's secret/environment settings. Keep
-`SEED_TEST_ACCOUNTS=false` and `NEXT_PUBLIC_SHOW_DEV_CREDS=false` for any public
-deployment. Review the deployment-specific flags in `render.yaml`; provider
-credentials must be configured in the hosting dashboard, not committed to the
-repository.
+separately and set its `NEXT_PUBLIC_API_URL` to the deployed backend URL.
+
+For any public deployment:
+
+- Configure MongoDB (`MONGODB_URI`), a strong `JWT_SECRET_KEY`, exact
+  `CORS_ORIGINS`, and `FRONTEND_URL` in the hosting provider's secret or
+  environment settings.
+- Set `TRUST_PROXY=true` on the backend, because the API runs behind the
+  hosting reverse proxy.
+- Keep `SEED_TEST_ACCOUNTS=false` and `NEXT_PUBLIC_SHOW_DEV_CREDS=false`;
+  never expose the development credential panel publicly.
+- Review the deployment-specific flags in `render.yaml`. Provider credentials
+  (Gnani, Cloudinary, Twilio) must be configured in the hosting dashboard, not
+  committed to the repository.
 
 ## Further documentation
 
@@ -348,4 +410,3 @@ repository.
 - [Local development guide](docs/DEVELOPMENT.md)
 - [Reusable UI design guide](docs/UI_DESIGN_GUIDE.md)
 - [Voice-assisted complaint guide](docs/VOICE_ASSISTED_COMPLAINT.md)
-- [Current project state and remaining work](memory/CURRENT_STATE.md)
