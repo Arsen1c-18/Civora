@@ -208,11 +208,11 @@ const suggestValue = () => container.querySelector("[data-suggest]")?.getAttribu
 
 test("typed description asks for the missing location, then reviews and submits the captured text", async () => {
   await mount();
-  assert.ok(button("Fill the form manually"), "manual mode is the default branch");
-
-  await click("Tell us your problem");
+  const voiceRadio = [...container.querySelectorAll('button[role="radio"]')].find((b) => b.textContent.includes("Tell us your problem"));
+  assert.equal(voiceRadio?.getAttribute("aria-checked"), "true", "voice mode is selected by default on mount");
+  assert.ok(container.querySelector("#intake-language"), "voice intake interface is immediately visible on mount");
   assert.match(container.textContent, /Describe/);
-  assert.equal(captures.length, 0, "switching modes never starts recording on its own");
+  assert.equal(captures.length, 0, "initial voice mode never starts recording on its own");
 
   const first = "The streetlight outside my house has been dark for three days.";
   await typedAnswer(first);
@@ -439,6 +439,7 @@ test("extraction failure offers a retry and never blocks manual submission", asy
 
 test("mode switching preserves the draft and the conversation", async () => {
   await mount();
+  await click("Fill the form manually");
   await setNativeValue(container.querySelector("input"), "Citizen's manual title");
   await setNativeValue(container.querySelector("textarea"), "A manual description the citizen typed before switching, long enough.");
 

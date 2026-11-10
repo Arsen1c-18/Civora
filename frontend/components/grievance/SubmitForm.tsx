@@ -63,7 +63,7 @@ export function SubmitForm() {
   } = useForm<FormValues>({ resolver: zodResolver(schema) });
   const currentTitle = useWatch({ control, name: "title" });
   const currentDescription = useWatch({ control, name: "description" });
-  const [mode, setMode] = useState<"voice" | "manual">("manual");
+  const [mode, setMode] = useState<"voice" | "manual">("voice");
   const [locationSuggestion, setLocationSuggestion] = useState<{ text: string; token: number; language: VoiceLanguage } | null>(null);
   const [intakeReady, setIntakeReady] = useState(false);
   // Photo step at the end of the voice conversation: optional but explicit.

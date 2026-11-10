@@ -1,7 +1,6 @@
 "use client";
 
 import { SubmitForm } from "@/components/grievance/SubmitForm";
-import { MyGrievances } from "@/components/grievance/MyGrievances";
 import Link from "next/link";
 import { useDemoUser } from "@/lib/session";
 import { Card, CardBody } from "@/components/ui/Card";
@@ -17,7 +16,7 @@ export default function SubmitPage() {
     <div className="bg-[#F3F6F8] min-h-[calc(100vh-4rem)]">
       {/* Page header — full bleed */}
       <div className="border-b border-[#E2E8F0] bg-white px-4 py-5 sm:px-6 sm:py-6 lg:px-8">
-        <div className="mx-auto max-w-6xl">
+        <div className="mx-auto max-w-4xl">
           <span className="text-[11px] font-bold uppercase tracking-wider text-teal-700">
             Civic Intake Portal
           </span>
@@ -30,19 +29,9 @@ export default function SubmitPage() {
         </div>
       </div>
 
-      {/* Two-column layout: form left, my grievances right (stacked on mobile) */}
-      <div className="mx-auto grid min-h-[calc(100vh-8rem)] w-full max-w-6xl gap-0 lg:grid-cols-[minmax(0,1fr)_380px]">
-        {/* Left: submit form */}
-        <div className="flex justify-center border-b border-ink-100 px-3 py-4 sm:px-6 sm:py-8 lg:border-b-0 lg:border-r lg:justify-end lg:px-8">
-          <div className="w-full max-w-3xl">
-            <SubmitForm />
-          </div>
-        </div>
-
-        {/* Right: citizen's grievance history sidebar */}
-        <div className="bg-ink-50/30 px-3 py-4 sm:px-6 sm:py-8">
-          <MyGrievances />
-        </div>
+      {/* Centered full-width Complaint Details form */}
+      <div className="mx-auto w-full max-w-4xl px-3 py-6 sm:px-6 sm:py-8 lg:px-8">
+        <SubmitForm />
       </div>
     </div>
   );
