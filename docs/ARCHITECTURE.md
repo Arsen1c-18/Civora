@@ -40,7 +40,7 @@ separate HTTP microservice. This reduces operational complexity for an academic 
 │  └── /resolver (queue, actions)               │
 │                                               │
 │  State: React Server Components + client state│
-│  Auth: NextAuth.js (JWT + Google OAuth)       │
+│  Auth: JWT sessions + password/OTP login      │
 └──────────────────┬───────────────────────────┘
                    │ REST API (JSON)
 ┌──────────────────▼───────────────────────────┐
@@ -98,29 +98,33 @@ separate HTTP microservice. This reduces operational complexity for an academic 
 - App Router for server-side rendering where appropriate
 - React Server Components for data-heavy pages (grievance lists, analytics)
 - Client components for interactive elements (forms, status updates)
-- NextAuth.js for session management, JWT handling, and Google OAuth callback
+- JWT session handling for password and optional phone-OTP login
 - Tailwind CSS for styling (default with Next.js scaffold)
 
-**Directory structure (proposed):**
+**Directory structure:**
 ```
 frontend/
 ├── app/
-│   ├── (auth)/login/
-│   ├── (user)/dashboard/
-│   ├── (user)/grievances/
-│   ├── (resolver)/queue/
-│   ├── (admin)/dashboard/
-│   ├── (admin)/grievances/
-│   ├── (admin)/analytics/
-│   └── api/auth/[...nextauth]/
+│   ├── login/ and register/  (public sign-in and citizen registration)
+│   ├── submit/               (complaint form with voice-first drafting)
+│   ├── track/                (citizen grievance tracking)
+│   ├── notifications/        (account notification inbox)
+│   ├── profile/              (citizen account profile)
+│   ├── admin/                (administrator workspaces)
+│   ├── resolver/             (employee assigned-task workspace)
+│   ├── superadmin/           (system account and department administration)
+│   └── re-enroll/ and auth/  (face re-enrollment and related flows)
 ├── components/
 │   ├── ui/           (shared UI components)
 │   ├── grievance/    (grievance-specific components)
 │   ├── admin/        (admin-specific components)
+│   ├── resolver/     (resolver workspace components)
+│   ├── superadmin/   (system administration components)
 │   └── charts/       (analytics visualization)
 ├── lib/
 │   ├── api.ts        (API client)
-│   ├── auth.ts       (NextAuth config)
+│   ├── session.tsx   (JWT session provider)
+│   ├── voice/        (speech capture and client-side helpers)
 │   └── types.ts      (shared TypeScript types)
 └── public/
 ```
@@ -213,7 +217,7 @@ Grievance state → PENDING_ASSIGNMENT
 
 ```
 User → POST /auth/login (email/password) → JWT access + refresh tokens
-User → GET /auth/google → Google OAuth 2.0 → JWT tokens
+User → POST /auth/login/phone/request-otp → /auth/login/phone/verify → JWT tokens (optional)
 
 JWT payload: { user_id, role, exp }
 
@@ -281,7 +285,6 @@ Results in AI-08/AI-09 recommendations stored in the database and surfaced to ad
 | Backend ↔ MongoDB | pymongo driver | `MONGODB_URI` env var (Atlas) |
 | Backend ↔ LLM API | HTTPS/REST | API key via env var (`GROQ_API_KEY`, `HF_API_TOKEN`) |
 | Backend ↔ Sentence Transformers | Python function call | Local model inference *(planned)* |
-| Backend ↔ Google OAuth | HTTPS/OAuth2 | *(planned — see Authentication Architecture)* |
 
 ---
 

@@ -299,7 +299,7 @@ are listed in `backend/.env.example`. Runtime audio remains WAV-only in the
 current capture interface; real-provider calls require operator credentials.
 
 > JWT auth (DEC-017) reads `JWT_SECRET_KEY`, `ACCESS_TOKEN_EXPIRE_MINUTES`,
-> `REFRESH_TOKEN_EXPIRE_DAYS` and the seed/Google OAuth vars from
+> `REFRESH_TOKEN_EXPIRE_DAYS` and the seed account variables from
 > `backend/.env` — see `backend/.env.example`.
 
 ### Frontend (`frontend/.env.local`)
@@ -310,8 +310,8 @@ NEXT_PUBLIC_USE_MOCKS=true        # false = talk to the live backend
 NEXT_PUBLIC_SHOW_DEV_CREDS=false  # local only, never enable in production
 ```
 
-> NextAuth / Google OAuth vars were removed along with the Firebase client —
-> auth is a demo/localStorage session for now.
+> Google OAuth and the Firebase client variables were removed; auth is JWT
+> password login with optional phone-OTP login.
 
 ---
 
@@ -441,11 +441,12 @@ Deploy the **backend first** — the frontend build needs its public URL.
    downloads the 122 MB model archive but extracts only the three ONNX files
    the app uses.
 2. Fill the `sync: false` vars in the dashboard: `MONGODB_URI` (Atlas —
-   allow Render to reach the cluster), `CORS_ORIGINS` (leave unset until the
-   Vercel URL exists; the `*` fallback works but is wide open, so tighten it
-   right after), `FRONTEND_URL` (Vercel URL, once known — SMS track links
+   allow Render to reach the cluster), `CORS_ORIGINS` (exact frontend origin;
+   the `*` fallback works but is wide open, so lock it in the dashboard),
+   `FRONTEND_URL` (Vercel URL, once known — SMS track links
    otherwise point at the dev default), `HF_API_TOKEN`, `GROQ_API_KEY`,
-   Cloudinary keys, `GOOGLE_CLIENT_ID`/`GOOGLE_CLIENT_SECRET`.
+   Cloudinary keys, and the speech settings `GNANI_API_KEY` +
+   `GNANI_PRISMA_ENABLED` (`GNANI_TIMBRE_ENABLED` for spoken answers).
 3. `JWT_SECRET_KEY` generates itself. Set `SEED_ADMIN_EMAIL` +
    `SEED_ADMIN_PASSWORD`, then **restart** the service (seeding runs at
    startup; it is a no-op if the admin already exists).
@@ -514,14 +515,7 @@ new account does not migrate those assets. Keep the old account available if
 those images must remain accessible, or migrate the assets and update their
 stored URLs before closing it.
 
-### 3. Google OAuth console
+### 3. Smoke test in production
 
-- Authorized JavaScript origins: the Vercel domain.
-- Authorized redirect URIs:
-  `https://<render-backend>/auth/google/callback` (the backend derives the
-  redirect from the request URL, so no code change is needed).
-
-### 4. Smoke test in production
-
-Citizen register → submit → track; admin login → assign → resolve; Google
-sign-in once. Then Twilio/DLT whenever live SMS is wanted.
+Citizen register → submit → track; admin login → assign → resolve; voice
+intake once while signed in. Then Twilio/DLT whenever live SMS is wanted.

@@ -181,8 +181,7 @@ password login pauses instead of returning tokens:
 `{ "two_factor": "face", "token_type": "bearer", "pending_token" }`.
 Exchange the short-lived (5 min, `type: "pending_2fa"`) `pending_token` at
 `POST /auth/face/verify-second-factor` — or skip via
-`POST /auth/complete-pending` — for a full session. Google OAuth redirects
-with `?two_factor=face&pending_token=...` for the same step. A pending token
+`POST /auth/complete-pending` — for a full session. A pending token
 never authorizes protected routes.
 
 ---
@@ -193,7 +192,7 @@ Convert a paused privileged login (`pending_2fa` token) into a full session.
 **Behaviour:** succeeds **only when the account is locked out on face
 verification failures** (escape hatch after the per-user lockout is reached);
 otherwise returns 403 `{"error": "Face verification required"}`. Face lockout
-never blocks the password/Google login itself.
+never blocks the password login itself.
 **Response 200:** `{ "access_token", "refresh_token", "token_type": "bearer" }`
 
 ---
@@ -206,12 +205,8 @@ Refresh access token.
 
 ---
 
-### GET /auth/google
-Redirect to Google OAuth 2.0 consent screen.
-
-### GET /auth/google/callback
-OAuth callback — exchanges code for tokens, creates or finds user.
-**Response:** Redirect with JWT tokens set.
+### GET /auth/me
+Current user profile from the access token.
 
 ### POST /auth/logout
 Invalidate refresh token.
@@ -282,7 +277,7 @@ it never increments lockout counters.
 
 ### POST /auth/face/verify-second-factor
 Completes a paused privileged login (the `pending_token` from
-`POST /auth/login` or the Google callback).
+`POST /auth/login`).
 **Auth:** pending token.
 **Request:** `{ "challenge_id": "string", "frames": ["base64jpeg", "..."] }`
 **Response 200:** full `AuthResponse` (identical shape to password login —

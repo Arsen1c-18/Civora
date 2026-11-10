@@ -51,8 +51,8 @@ The voice experience runs on Gnani's speech models:
   a UI redesign.
 
 Gnani Evon (LLM) is not integrated. Classification runs locally inside the
-backend as described under [AI status and known
-limitations](#ai-status-and-known-limitations).
+backend as described under [Current limitations and
+future scope](#current-limitations-and-future-scope).
 
 Configuration is backend-only: set `GNANI_API_KEY` and enable
 `GNANI_PRISMA_ENABLED` / `GNANI_TIMBRE_ENABLED`. The full API contract, env
@@ -352,23 +352,39 @@ repositories. For MongoDB repository tests, set `TEST_MONGODB_URI` and
 `TEST_MONGODB_DB` to a disposable test database. Do not point test fixtures at
 the evaluation or production database.
 
-## AI status and known limitations
+## Current limitations and future scope
 
-- Voice intake transcription quality depends on the Gnani Prisma service; the
-  platform has not independently evaluated transcription accuracy on real
-  complaint audio.
-- Category classification is an early-stage cascade using a local
-  word/character model, deterministic rules, and optional provider fallbacks.
-  It is experimental and must not be treated as validated accuracy.
-- Priority and urgency values are advisory. A human reviews department routing
-  and assigns employees.
-- Related-complaint grouping uses client-side TF-IDF; semantic embedding search
-  is not implemented.
-- Several planned modules, including persisted summarization, entity
-  extraction, delay-risk estimation, AI escalation recommendations, and
-  resolution-quality assessment, are not complete.
-- The application has not been approved or validated for real government
-  operations or production-scale use.
+CIVORA is a working prototype whose core flows are functional. The items
+below are functional boundaries and future directions, not blockers.
+
+1. **Scalability under heavy workloads.** The deployment is designed and
+   tested for prototype-level usage; it has not yet been validated for
+   thousands of simultaneous users. Load testing, performance optimization
+   and infrastructure scaling come with growth.
+2. **Language coverage.** Voice drafting runs in English, Hindi, and Marathi
+   in the UI today, and Prisma itself covers ten Indian languages.
+   Comprehensive support across further regional languages, dialects, and
+   code-mixed speech requires further model evaluation.
+3. **Voice recognition in challenging environments.** Background noise, poor
+   microphone quality, strong regional accents, and overlapping speech can
+   affect transcription accuracy; independent evaluation on real citizen
+   recordings is still pending.
+4. **Integration with external authorities.** Grievances move through
+   CIVORA's own audited workflow. Direct integration with existing
+   government department portals and external grievance systems would need
+   additional development and coordination.
+5. **AI classification accuracy.** Categorization, priority assessment, and
+   department recommendations are advisory and may require human correction,
+   particularly for complex, ambiguous, or multi-department grievances.
+   Human officers review and confirm routing before any assignment.
+6. **Advanced grievance intelligence.** Registration, assignment, tracking,
+   and resolution work today. Durable duplicate-complaint detection,
+   recurring-issue identification, and predictive analysis of departmental
+   bottlenecks are natural next steps.
+7. **Real-world deployment validation.** Extended pilot testing with actual
+   citizens, employees, and administrative departments is required to
+   evaluate usability, response times, resolution efficiency, and
+   effectiveness at scale.
 
 ## Deployment
 

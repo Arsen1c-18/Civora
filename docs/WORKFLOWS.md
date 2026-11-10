@@ -354,10 +354,10 @@ Face tab issues a challenge, captures frames, and posts them with the email.
 A liveness-passed 1:1 match against that user's template returns the same JWT
 session a password login would. Failures are generic 401s; repeated failures
 lock the face path per email (5), per user (5), and per IP (20) within 15
-minutes — password/Google login is never blocked by these counters.
+minutes — password login is never blocked by these counters.
 
 **Admin / Superadmin step-up (optional convenience, not a control):** after a
-successful password or Google sign-in, accounts with `requireLogin2fa` pause
+successful password sign-in, accounts with `requireLogin2fa` pause
 with a short-lived `pending_2fa` token and must satisfy a face challenge
 (`POST /auth/face/verify-second-factor`). The user may skip —
 `POST /auth/complete-pending` issues a full session only once the account is
