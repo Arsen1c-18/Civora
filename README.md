@@ -4,6 +4,8 @@
 
 **Live deployment:** [civora-public-grievance.vercel.app](https://civora-public-grievance.vercel.app) · [API status](https://grievance-ai-backend-04tv.onrender.com/health) · [Interactive API documentation](https://grievance-ai-backend-04tv.onrender.com/docs)
 
+Open-prototype demo — explore it freely with the shared demo accounts below.
+
 CIVORA is a web-based grievance redressal and management platform for civic
 complaints. Citizens can file a complaint by speaking as well as typing, and
 staff run a role-based workflow with department analytics, maps, and
@@ -187,7 +189,7 @@ SEED_TEST_ACCOUNTS=true
 
 `citizen@grievance.local` is seeded automatically. Test accounts are created
 only if missing; existing accounts and their passwords are left unchanged.
-Keep account seeding disabled on public or production deployments.
+Disable account seeding for any hardened, non-demo deployment.
 
 Start the API from the repository root:
 
@@ -225,7 +227,8 @@ NEXT_PUBLIC_SHOW_DEV_CREDS=true
 
 `NEXT_PUBLIC_USE_MOCKS` defaults to `true` in the example file. Set it to
 `false` to use the FastAPI backend and its database. The development credential
-panel is for isolated evaluation only; never enable it in a public deployment.
+panel is a demo convenience: the live demo intentionally runs in
+open-prototype mode, while hardened deployments keep it disabled.
 
 Start the frontend:
 
@@ -259,9 +262,10 @@ intake runs on typed entry only.
 
 ## Demo accounts
 
-The following default credentials are for an isolated demo database only.
-Change them and disable development credential display before exposing an
-instance publicly.
+The live deployment is an open-prototype demo: anyone can explore it with the
+seeded accounts below. These are demo-only identities on demo data. For any
+hardened, non-demo deployment, disable the seeds and rotate credentials before
+exposing it.
 
 | Account | Email | Default password |
 |---|---|---|
@@ -391,8 +395,10 @@ For any public deployment:
   environment settings.
 - Set `TRUST_PROXY=true` on the backend, because the API runs behind the
   hosting reverse proxy.
-- Keep `SEED_TEST_ACCOUNTS=false` and `NEXT_PUBLIC_SHOW_DEV_CREDS=false`;
-  never expose the development credential panel publicly.
+- The live demo runs in open-prototype mode: seeded demo accounts and the
+  development credential panel stay enabled so anyone can explore. For a
+  hardened deployment, set `SEED_TEST_ACCOUNTS=false` and
+  `NEXT_PUBLIC_SHOW_DEV_CREDS=false` before onboarding real citizens.
 - Review the deployment-specific flags in `render.yaml`. Provider credentials
   (Gnani, Cloudinary, Twilio) must be configured in the hosting dashboard, not
   committed to the repository.
