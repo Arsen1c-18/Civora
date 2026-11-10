@@ -6,7 +6,7 @@ complaint fields can be extracted, and what (if anything) is still missing?".
 
 The LLM reply is never trusted as-is: every value is re-validated here
 (length caps, category/priority whitelists) and anything the citizen did not
-actually state is dropped rather than guessed (AGENTS.md: no fabricated
+actually state is dropped rather than guessed (no fabricated
 facts, no privileged decisions — category/priority stay advisory hints; the
 authoritative classification still happens in the submit pipeline).
 """

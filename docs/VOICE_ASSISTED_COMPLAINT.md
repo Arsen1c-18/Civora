@@ -855,10 +855,9 @@ Ruff/mypy unavailable; no dependency installation. Backend restart remains pendi
 
 Implementation of recording, authenticated STT, multilingual drafting, title
 suggestions, Append/Replace/Cancel and initialization-only diagnostics is complete.
-This is IMPLEMENTED/mock TESTED, not a production-readiness or multilingual speech
-accuracy claim. The owner-designated Stage 11 documents the implemented work;
-no original complete eleven-stage roadmap was recovered earlier, so this section
-does not invent historical stage objectives. See [HANDOFF_SUMMARY.md](../HANDOFF_SUMMARY.md) for the teammate checklist.
+This is implemented and mock-tested, not a production-readiness or multilingual speech
+accuracy claim. This section documents the work that exists today; it does not
+invent historical roadmap stages.
 
 ### Current authentication blocker and failed launches
 

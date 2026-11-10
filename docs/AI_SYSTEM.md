@@ -124,8 +124,8 @@ second generic keyword pass or performs unconditional Groq refinement.
 
 Thresholds and model hyperparameters were not tuned: the labeled file contains
 only 30 distinct cleaned examples (five per category), too few to establish a
-reliable winner or calibrate confidence. See [ML evaluation audit](ML_EVALUATION.md)
-and the [independent pipeline verification](ML_CLASSIFICATION_AUDIT_2026-10-20.md).
+reliable winner or calibrate confidence. An ML evaluation audit and an
+independent pipeline verification (2026-10-20) covered this dataset.
 The production algorithm remains the existing LogisticRegression model.
 
 ### Civic relevance gate

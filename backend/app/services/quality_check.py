@@ -3,7 +3,7 @@
 Uses a fast Groq call bounded by the shared classification budget.
 Returns a dict: { "is_genuine": bool | None, "reason": str }
 
-Design constraints (AGENTS.md / DEC-049):
+Design constraints:
   - An unavailable or unusable answer is indeterminate; the caller must not
     persist the submission without a positive relevance result.
   - The result is a relevance filter, not an administrative decision.

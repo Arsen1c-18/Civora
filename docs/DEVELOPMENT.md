@@ -229,13 +229,11 @@ way for a while — live data lost the confidence display that mock data kept.
 
 ### Citizen-side test plan and manual cases
 
-[`docs/USER_SIDE_TEST_CASES.md`](USER_SIDE_TEST_CASES.md) is the user-facing
-test plan, case suite, E2E journey set, traceability matrix, and gap register.
-It contains **170 module cases and 12 journeys that have not been executed**;
-it is documentation, not test code. Use it for manual release validation and
-as the specification for new Playwright/API tests. Do not cite it as evidence
-that a feature passes. The existing pytest, contract, and voice suites above
-remain the only automated coverage.
+The citizen-side manual test plan (case suite, E2E journey set, traceability
+matrix, and gap register) is a working document for release validation kept
+outside this repository. It is documentation, not test code, and is not cited
+as evidence that a feature passes. The existing pytest, contract, and voice
+suites above remain the only automated coverage.
 
 ---
 
@@ -424,15 +422,9 @@ must be running on :10000. Check the error banner in the UI.
 Run uvicorn from the repository root, not from inside backend/.
 ```
 
-### 2026-10-14 ? Write-free diagnostic initialization
+### 2026-10-14: Write-free diagnostic initialization
 
-DIAGNOSTIC_SKIP_INITIALIZATION_WRITES=true is a process-local, default-off diagnostic option suppressing MongoDB initialization indexes/default seeds and startup backfill/seeding. It does not disable endpoint writes. Keep false in normal deployments. Use one worker without reload, transcription disabled, and lifespan off; see docs/VOICE_ASSISTED_COMPLAINT.md for the verified-CA launcher and fail-closed authentication verification. Backend restart remains pending separate authorization.
-
-Stage 11 status: guarded local login restoration did not succeed. The last retry
-failed on incompatible TLS URI options; the guide now contains a corrected,
-unexecuted proposal. See ../HANDOFF_SUMMARY.md and the voice guide before any
-separately approved restart. Keep both diagnostic initialization and transcription
-flags false in normal operation.
+DIAGNOSTIC_SKIP_INITIALIZATION_WRITES=true is a process-local, default-off diagnostic option suppressing MongoDB initialization indexes/default seeds and startup backfill/seeding. It does not disable endpoint writes. Keep false in normal deployments; see docs/VOICE_ASSISTED_COMPLAINT.md for the verified-CA launcher and fail-closed authentication verification.
 
 ---
 

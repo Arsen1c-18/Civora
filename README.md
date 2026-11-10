@@ -352,10 +352,6 @@ repositories. For MongoDB repository tests, set `TEST_MONGODB_URI` and
 `TEST_MONGODB_DB` to a disposable test database. Do not point test fixtures at
 the evaluation or production database.
 
-`docs/USER_SIDE_TEST_CASES.md` is a manual test plan. Its cases are not a
-record of executed tests; check the current status before treating the plan as
-validation evidence.
-
 ## AI status and known limitations
 
 - Voice intake transcription quality depends on the Gnani Prisma service; the
@@ -405,8 +401,6 @@ For any public deployment:
 
 ## Further documentation
 
-- [Product requirements](PRD.md)
-- [Project and research context](docs/PROJECT_CONTEXT.md)
 - [Architecture](docs/ARCHITECTURE.md)
 - [API contracts](docs/API.md)
 - [Database design](docs/DATABASE.md)

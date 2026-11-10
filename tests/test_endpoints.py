@@ -749,7 +749,7 @@ def test_unknown_status_values_are_accepted_verbatim(client, sample_payload):
 def test_status_update_records_no_history_or_actor(client, sample_payload):
     """BASELINE for Phase 2: there is no audit trail at all.
 
-    AGENTS.md requires who/what/when/reason and human-vs-AI provenance for
+    Auditability requires who/what/when/reason and human-vs-AI provenance for
     important actions; none of that exists yet, and the response proves it by
     exposing no such fields.
     """

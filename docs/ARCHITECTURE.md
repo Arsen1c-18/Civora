@@ -291,11 +291,10 @@ This architecture is designed for **prototype scale**.
 Single-process FastAPI with background tasks is sufficient.
 Celery, Redis, and horizontal scaling are not required for this phase.
 
-### Voice diagnostic initialization and final handoff
+### Voice diagnostic initialization
 
 Stage 10 adds a default-off initialization-only guard across nine MongoDB
 repositories and startup seed/backfill. Repository construction and endpoint
-authorization/writes remain unchanged; this is not a read-only API mode. Stage 11
-architecture/configuration/validation inventory: [voice guide](VOICE_ASSISTED_COMPLAINT.md)
-and [final handoff](../HANDOFF_SUMMARY.md). MongoDB-backed login restoration remains
-unverified after failed controlled starts.
+authorization/writes remain unchanged; this is not a read-only API mode. The
+configuration and validation inventory for this mode: see the
+[voice guide](VOICE_ASSISTED_COMPLAINT.md).

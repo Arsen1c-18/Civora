@@ -94,3 +94,15 @@ backend/serviceAccountKey.json
 
 # Project memory / dev session notes stay local, never published
 memory/
+
+# Internal product/process documents stay local to the dev machine
+AGENTS.md
+PRD.md
+HANDOFF_SUMMARY.md
+INTEGRATION.md
+frontend/CLAUDE.md
+test_fallback.py
+civora logo.png
+docs/PROJECT_CONTEXT.md
+docs/ML_CLASSIFICATION_AUDIT_2026-10-20.md
+docs/USER_SIDE_TEST_CASES.md
